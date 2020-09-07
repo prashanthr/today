@@ -1,6 +1,7 @@
 use actix_web::{web, App, HttpServer};
+extern crate reqwest;
 
-mod route_handler;
+mod api;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -9,8 +10,10 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
-            .route("/", web::get().to(route_handler::index))
-            .route("/again", web::get().to(route_handler::index2))
+            .route("/", web::get().to(api::health))
+            .route("/health", web::get().to(api::health))
+            .route("/qod", web::get().to(api::quote_of_day))
+            .route("/wod", web::get().to(api::weather_of_day))
     })
     .bind(format!("{}:{}", HOST, PORT))?
     .run()
