@@ -11,6 +11,8 @@ use serde_json::{Result};
 use reqwest::{header, ClientBuilder};
 use serde::{Deserialize, Serialize};
 
+use crate::util;
+
 /*
  Makes a HTTP GET request
 */
@@ -46,22 +48,22 @@ async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str) -> Result
 /*
  Fetches the value of any environment variable
 */
-pub fn get_env (key: &str, default_value: Option<&str>) -> String {
-  let empty: &str = "";
-  match env::var(key) {
-    Ok(val) => {
-      println!("{}: {}", key, val);
-      String::from(val)
-    },
-    Err(err) => {
-      println!("Couldn't interpret env {:?}: {}", key, err);
-      match default_value {
-        Some(val) => String::from(val),
-        None => String::from(empty)
-      }
-    },
-  }
-}
+// pub fn get_env (key: &str, default_value: Option<&str>) -> String {
+//   let empty: &str = "";
+//   match env::var(key) {
+//     Ok(val) => {
+//       println!("{}: {}", key, val);
+//       String::from(val)
+//     },
+//     Err(err) => {
+//       println!("Couldn't interpret env {:?}: {}", key, err);
+//       match default_value {
+//         Some(val) => String::from(val),
+//         None => String::from(empty)
+//       }
+//     },
+//   }
+// }
 
 /* Route Handlers */
 
@@ -129,7 +131,7 @@ pub async fn weather_of_day(info: web::Query<WODRequest>) -> impl Responder {
     Some(loc) => loc.to_string(),
   };
   let base_url: &str = "https://api.openweathermap.org/data/2.5/weather";
-  let api_key: String = get_env("WEATHER_API_KEY", None);
+  let api_key: String = util::environment::get_env("WEATHER_API_KEY", None);
   let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&APPID=" + &api_key.to_owned());
   #[derive(Serialize, Deserialize, Debug)]
   struct Weather {
@@ -182,7 +184,7 @@ pub async fn weather_of_day(info: web::Query<WODRequest>) -> impl Responder {
 pub async fn news_of_day() -> impl Responder {
   let base_url: &str = "http://newsapi.org/v2/top-headlines";
   let country = "us";
-  let api_key: String = get_env("NEWS_API_KEY", None);
+  let api_key: String = util::environment::get_env("NEWS_API_KEY", None);
   let nod_url: &str = &(base_url.to_owned() + "?country=" + country + "&apiKey=" + &api_key.to_owned());
   #[derive(Serialize, Deserialize, Debug)]
   struct NewsArticleSource {
