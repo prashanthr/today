@@ -1,8 +1,5 @@
 use actix_web::{web, App, HttpServer};
 
-extern crate serde;
-// use serde::{Deserialize};
-
 mod api;
 
 #[actix_rt::main]
@@ -15,6 +12,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .route("/", web::get().to(api::health))
             .route("/health", web::get().to(api::health))
+            .route("/test", web::get().to(api::test))
             .route("/qod", web::get().to(api::quote_of_day))
             .route("/wod", web::get().to(api::weather_of_day))
             // .service(

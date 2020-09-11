@@ -8,9 +8,10 @@ extern crate reqwest;
 extern crate serde;
 use reqwest::{header, ClientBuilder};
 use serde::{Deserialize};
-// #[macro_use] 
-// extern crate serde_derive;
 
+/*
+ Makes a HTTP GET request
+*/
 async fn make_request (url: &str) -> Result<HashMap<String, String>, reqwest::Error> {
   let mut headers = header::HeaderMap::new();
   headers.insert(header::ACCEPT, header::HeaderValue::from_static("application/json"));
@@ -45,31 +46,41 @@ async fn make_request (url: &str) -> Result<HashMap<String, String>, reqwest::Er
   }
 }
 
-// fn get_env (key: &str, defaultValue: &str) -> &str {
-//   let empty: &str = "";
-//   match env::var(key) {
-//     Ok(val) => {
-//       println!("{}: {}", key, val);
-//       &val
-//     },
-//     Err(e) => {
-//       println!("couldn't interpret {:?}: {}", key, e);
-//       if defaultValue.is_empty() {
-//         &empty
-//       } else {
-//         &defaultValue.to_owned()
-//       }
-//     },
-//   }
-// }
-
+/*
+ Fetches the value of any environment variable
+*/
+fn get_env (key: &str, default_value: Option<&str>) -> String {
+  let empty: &str = "";
+  match env::var(key) {
+    Ok(val) => {
+      println!("{}: {}", key, val);
+      String::from(val)
+    },
+    Err(err) => {
+      println!("Couldn't interpret env {:?}: {}", key, err);
+      match default_value {
+        Some(val) => String::from(val),
+        None => String::from(empty)
+      }
+    },
+  }
+}
+/* Route Handlers */
 pub async fn health() -> impl Responder {
   let status_data: HashMap<&str, &str> = [("status", "healthy")].iter().cloned().collect();
   HttpResponse::Ok().json(status_data)
 }
 
+pub async fn test() -> impl Responder {
+  let test_url: &str = "https://httpbin.org/ip";
+  match make_request(test_url).await {
+    Ok(data) => HttpResponse::Ok().json(data),
+    Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
+  }
+}
+
 pub async fn quote_of_day() -> impl Responder {
-  let qod_url: &str = "https://httpbin.org/ip"; //"https://quotes.rest/qod?language=en";
+  let qod_url: &str = "https://quotes.rest/qod?language=en";
   match make_request(qod_url).await {
     Ok(data) => {
       println!("Inner {:?}", data);
@@ -91,9 +102,8 @@ pub async fn weather_of_day(info: web::Query<WODRequest>) -> impl Responder {
     None => String::from(""),
     Some(loc) => loc.to_string(),
   };
-  let base_url: &str = "https://api.openweathermap.org/data/2.5/weather";
-  //let api_key: &str = get_env(String::from("WEATHER_API_KEY"), String::from(""));
-  let api_key: &str = "db5a05bd35c42b20c0934a36d0735441";
+  let base_url: &str = "https://api.openweathermap.org/data/2.5/forecast";
+  let api_key: String = get_env("WEATHER_API_KEY", None);
   let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&appId=" + &api_key.to_owned());
   println!("WOD URL: {}", wod_url);
   //const WOD_URL: &str = format!("{}?q={}&appid={}", base_url, LOCATION, API_KEY);
