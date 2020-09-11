@@ -6,13 +6,16 @@ use std::time::Duration;
 use std::env;
 extern crate reqwest;
 extern crate serde;
+extern crate serde_json;
+use serde_json::{Result};
 use reqwest::{header, ClientBuilder};
-use serde::{Deserialize};
+use serde::{Deserialize, Serialize};
 
 /*
  Makes a HTTP GET request
 */
-async fn make_request (url: &str) -> Result<HashMap<String, String>, reqwest::Error> {
+
+async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str) -> Result<T> {
   let mut headers = header::HeaderMap::new();
   headers.insert(header::ACCEPT, header::HeaderValue::from_static("application/json"));
   let client = ClientBuilder::new()
@@ -22,7 +25,7 @@ async fn make_request (url: &str) -> Result<HashMap<String, String>, reqwest::Er
       "/",
       env!("CARGO_PKG_VERSION")))
     .timeout(Duration::from_secs(10))
-    .build()?;
+    .build().unwrap();
   match client
     .get(url)
     .send()
@@ -31,17 +34,15 @@ async fn make_request (url: &str) -> Result<HashMap<String, String>, reqwest::Er
         println!("Rez {:?}", data);
         match data.status().is_success() {
           true => Ok(
-            data
-            .json::<HashMap<String, String>>()
-            .await
-            .unwrap()
+            // serde_json::from_reader::<T>(data).await?;
+            data.json::<T>().await.unwrap()
           ) ,
-          false => Ok(HashMap::new())
+          false => panic!("Received non OK response")
         }    
       },
       Err(err) => {
-        println!("Error occurred when trying to make request to {}: {}", url, err);
-        Err(err)
+        let msg: String = format!("Error occurred when trying to make request to {}: {}", url, err);
+        panic!(msg)
       }
   }
 }
@@ -72,16 +73,33 @@ pub async fn health() -> impl Responder {
 }
 
 pub async fn test() -> impl Responder {
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Ip {
+    origin: String,
+  };
   let test_url: &str = "https://httpbin.org/ip";
-  match make_request(test_url).await {
+  match make_request::<Ip>(test_url).await {
     Ok(data) => HttpResponse::Ok().json(data),
     Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
 }
 
 pub async fn quote_of_day() -> impl Responder {
-  let qod_url: &str = "https://quotes.rest/qod?language=en";
-  match make_request(qod_url).await {
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Quote {
+    quote: String,
+    author: String
+  };
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Contents {
+    quotes: Vec<Quote>
+  };
+  #[derive(Serialize, Deserialize, Debug)]
+  struct QOD {
+    contents: Contents,
+  };
+  let qod_url: &str = "https://quotes.rest/qod"; //"https://quotes.rest/qod?language=en";
+  match make_request::<QOD>(qod_url).await {
     Ok(data) => {
       println!("Inner {:?}", data);
       HttpResponse::Ok()
@@ -102,12 +120,21 @@ pub async fn weather_of_day(info: web::Query<WODRequest>) -> impl Responder {
     None => String::from(""),
     Some(loc) => loc.to_string(),
   };
-  let base_url: &str = "https://api.openweathermap.org/data/2.5/forecast";
+  let base_url: &str = "https://api.openweathermap.org/data/2.5/weather";
   let api_key: String = get_env("WEATHER_API_KEY", None);
   let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&appId=" + &api_key.to_owned());
   println!("WOD URL: {}", wod_url);
-  //const WOD_URL: &str = format!("{}?q={}&appid={}", base_url, LOCATION, API_KEY);
-  match make_request(wod_url).await {
+  #[derive(Serialize, Deserialize, Debug)]
+  struct Weather {
+    main: String,
+    description: String,
+    icon: String
+  };
+  #[derive(Serialize, Deserialize, Debug)]
+  struct WOD {
+    weather: Weather,
+  };
+  match make_request::<WOD>(wod_url).await {
     Ok(data) => HttpResponse::Ok().json(data),
     Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
