@@ -2,68 +2,11 @@
 use actix_web::{web, HttpResponse, Responder, http};
 use http::StatusCode;
 use std::collections::HashMap;
-use std::time::Duration;
-use std::env;
-extern crate reqwest;
+
 extern crate serde;
-extern crate serde_json;
-use serde_json::{Result};
-use reqwest::{header, ClientBuilder};
 use serde::{Deserialize, Serialize};
 
 use crate::util;
-
-/*
- Makes a HTTP GET request
-*/
-async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str) -> Result<T> {
-  let mut headers = header::HeaderMap::new();
-  headers.insert(header::ACCEPT, header::HeaderValue::from_static("application/json"));
-  let client = ClientBuilder::new()
-    .default_headers(headers)
-    .user_agent(concat!(
-      env!("CARGO_PKG_NAME"),
-      "/",
-      env!("CARGO_PKG_VERSION")))
-    .timeout(Duration::from_secs(10))
-    .build().unwrap();
-  println!("Making request to {}", url);
-  match client
-    .get(url)
-    .send()
-    .await {
-      Ok(data) =>  {
-        println!("Rez {:?}", data);
-        match data.status().is_success() {
-          true => Ok(data.json::<T>().await.unwrap()),
-          false => panic!("Received non OK response")
-        }    
-      },
-      Err(err) => {
-        panic!(format!("Error occurred when trying to make request to {}: {}", url, err))
-      }
-  }
-}
-
-/*
- Fetches the value of any environment variable
-*/
-// pub fn get_env (key: &str, default_value: Option<&str>) -> String {
-//   let empty: &str = "";
-//   match env::var(key) {
-//     Ok(val) => {
-//       println!("{}: {}", key, val);
-//       String::from(val)
-//     },
-//     Err(err) => {
-//       println!("Couldn't interpret env {:?}: {}", key, err);
-//       match default_value {
-//         Some(val) => String::from(val),
-//         None => String::from(empty)
-//       }
-//     },
-//   }
-// }
 
 /* Route Handlers */
 
@@ -84,7 +27,7 @@ pub async fn test() -> impl Responder {
     origin: String,
   };
   let test_url: &str = "https://httpbin.org/ip";
-  match make_request::<Ip>(test_url).await {
+  match util::http_client::make_request::<Ip>(test_url).await {
     Ok(data) => HttpResponse::Ok().json(data),
     Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
@@ -108,7 +51,7 @@ pub async fn quote_of_day() -> impl Responder {
     contents: Contents,
   };
   let qod_url: &str = "http://quotes.rest/qod.json?category=inspire&language=en";
-  match make_request::<QOD>(qod_url).await {
+  match util::http_client::make_request::<QOD>(qod_url).await {
     Ok(data) => {
       println!("Inner {:?}", data);
       HttpResponse::Ok()
@@ -173,7 +116,7 @@ pub async fn weather_of_day(info: web::Query<WODRequest>) -> impl Responder {
     sys: WeatherSys,
     name: String,
   };
-  match make_request::<WOD>(wod_url).await {
+  match util::http_client::make_request::<WOD>(wod_url).await {
     Ok(data) => HttpResponse::Ok().json(data),
     Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
@@ -205,7 +148,7 @@ pub async fn news_of_day() -> impl Responder {
   struct NOD {
     articles: Vec<NewsArticle>
   }
-  match make_request::<NOD>(nod_url).await {
+  match util::http_client::make_request::<NOD>(nod_url).await {
     Ok(data) => HttpResponse::Ok().json(data),
     Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
