@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 /*
  Makes a HTTP GET request
 */
-
 async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str) -> Result<T> {
   let mut headers = header::HeaderMap::new();
   headers.insert(header::ACCEPT, header::HeaderValue::from_static("application/json"));
@@ -33,16 +32,12 @@ async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str) -> Result
       Ok(data) =>  {
         println!("Rez {:?}", data);
         match data.status().is_success() {
-          true => Ok(
-            // serde_json::from_reader::<T>(data).await?;
-            data.json::<T>().await.unwrap()
-          ) ,
+          true => Ok(data.json::<T>().await.unwrap()),
           false => panic!("Received non OK response")
         }    
       },
       Err(err) => {
-        let msg: String = format!("Error occurred when trying to make request to {}: {}", url, err);
-        panic!(msg)
+        panic!(format!("Error occurred when trying to make request to {}: {}", url, err))
       }
   }
 }
@@ -50,7 +45,7 @@ async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str) -> Result
 /*
  Fetches the value of any environment variable
 */
-fn get_env (key: &str, default_value: Option<&str>) -> String {
+pub fn get_env (key: &str, default_value: Option<&str>) -> String {
   let empty: &str = "";
   match env::var(key) {
     Ok(val) => {
@@ -66,12 +61,20 @@ fn get_env (key: &str, default_value: Option<&str>) -> String {
     },
   }
 }
+
 /* Route Handlers */
+
+/*
+ Health Check
+*/
 pub async fn health() -> impl Responder {
   let status_data: HashMap<&str, &str> = [("status", "healthy")].iter().cloned().collect();
   HttpResponse::Ok().json(status_data)
 }
 
+/*
+  Test Route
+*/
 pub async fn test() -> impl Responder {
   #[derive(Serialize, Deserialize, Debug)]
   struct Ip {
@@ -84,6 +87,9 @@ pub async fn test() -> impl Responder {
   }
 }
 
+/*
+  Quote of day
+*/
 pub async fn quote_of_day() -> impl Responder {
   #[derive(Serialize, Deserialize, Debug)]
   struct Quote {
@@ -113,7 +119,9 @@ pub async fn quote_of_day() -> impl Responder {
 pub struct WODRequest {
   location: Option<String>
 }
-
+/*
+  Wrather of day
+*/
 pub async fn weather_of_day(info: web::Query<WODRequest>) -> impl Responder {
   println!("here {:?}", info.location);
   let resolved_location: String = match &info.location {
@@ -138,4 +146,8 @@ pub async fn weather_of_day(info: web::Query<WODRequest>) -> impl Responder {
     Ok(data) => HttpResponse::Ok().json(data),
     Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
+}
+
+pub async fn news_of_day() -> impl Responder {
+  HttpResponse::new(StatusCode::from_u16(500).unwrap())
 }

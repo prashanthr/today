@@ -4,10 +4,12 @@ mod api;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    const HOST: &str = "127.0.0.1";
-    const PORT: i32 = 8088;
+    let app_name: String = String::from("today");
+    let host: String = api::get_env("TODAY_API_HOST", Some("127.0.0.1"));
+    let port: String = api::get_env("TODAY_API_PORT", Some("8088"));
     
-    // #[derive(Deserialize)]
+    println!("Running {} server at {}:{}", app_name, host, port);
+    
     HttpServer::new(|| {
         App::new()
             .route("/", web::get().to(api::health))
@@ -21,7 +23,7 @@ async fn main() -> std::io::Result<()> {
             //   .to(api::weather_of_day) // <- use `Query` extractor
             // )
     })
-    .bind(format!("{}:{}", HOST, PORT))?
+    .bind(format!("{}:{}", host, port))?
     .run()
     .await
 }
