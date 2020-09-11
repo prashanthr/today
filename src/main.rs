@@ -15,6 +15,7 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(api::health))
             .route("/health", web::get().to(api::health))
             .route("/test", web::get().to(api::test))
+            .route("/nod", web::get().to(api::news_of_day))
             .route("/qod", web::get().to(api::quote_of_day))
             .route("/wod", web::get().to(api::weather_of_day))
             // .service(

@@ -25,6 +25,7 @@ async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str) -> Result
       env!("CARGO_PKG_VERSION")))
     .timeout(Duration::from_secs(10))
     .build().unwrap();
+  println!("Making request to {}", url);
   match client
     .get(url)
     .send()
@@ -104,12 +105,12 @@ pub async fn quote_of_day() -> impl Responder {
   struct QOD {
     contents: Contents,
   };
-  let qod_url: &str = "https://quotes.rest/qod"; //"https://quotes.rest/qod?language=en";
+  let qod_url: &str = "http://quotes.rest/qod.json?category=inspire&language=en";
   match make_request::<QOD>(qod_url).await {
     Ok(data) => {
       println!("Inner {:?}", data);
       HttpResponse::Ok()
-        .json(data)
+        .json(data.contents.quotes)
     },
     Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
@@ -123,15 +124,13 @@ pub struct WODRequest {
   Wrather of day
 */
 pub async fn weather_of_day(info: web::Query<WODRequest>) -> impl Responder {
-  println!("here {:?}", info.location);
   let resolved_location: String = match &info.location {
     None => String::from(""),
     Some(loc) => loc.to_string(),
   };
   let base_url: &str = "https://api.openweathermap.org/data/2.5/weather";
   let api_key: String = get_env("WEATHER_API_KEY", None);
-  let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&appId=" + &api_key.to_owned());
-  println!("WOD URL: {}", wod_url);
+  let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&APPID=" + &api_key.to_owned());
   #[derive(Serialize, Deserialize, Debug)]
   struct Weather {
     main: String,
@@ -139,15 +138,72 @@ pub async fn weather_of_day(info: web::Query<WODRequest>) -> impl Responder {
     icon: String
   };
   #[derive(Serialize, Deserialize, Debug)]
+  struct WeatherMain {
+    temp: f32,
+    feels_like: f32,
+    temp_min: f32,
+    temp_max: f32,
+    pressure: f32,
+    humidity: f32,
+  }
+  #[derive(Serialize, Deserialize, Debug)]
+  struct WeatherWind {
+    speed: f32,
+    deg: f32,
+  }
+  #[derive(Serialize, Deserialize, Debug)]
+  struct WeatherClouds {
+    all: f32,
+  }
+  #[derive(Serialize, Deserialize, Debug)]
+  struct WeatherSys {
+    country: String,
+    sunrise: i64,
+    sunset: i64,
+  }
+  #[derive(Serialize, Deserialize, Debug)]
   struct WOD {
-    weather: Weather,
+    weather: Vec<Weather>,
+    main: WeatherMain,
+    visibility: f32,
+    wind: WeatherWind,
+    clouds: WeatherClouds,
+    sys: WeatherSys,
+    name: String,
   };
   match make_request::<WOD>(wod_url).await {
     Ok(data) => HttpResponse::Ok().json(data),
     Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
 }
-
+/*
+  News of day
+*/
 pub async fn news_of_day() -> impl Responder {
-  HttpResponse::new(StatusCode::from_u16(500).unwrap())
+  let base_url: &str = "http://newsapi.org/v2/top-headlines";
+  let country = "us";
+  let api_key: String = get_env("NEWS_API_KEY", None);
+  let nod_url: &str = &(base_url.to_owned() + "?country=" + country + "&apiKey=" + &api_key.to_owned());
+  #[derive(Serialize, Deserialize, Debug)]
+  struct NewsArticleSource {
+    name: String
+  }
+  #[derive(Serialize, Deserialize, Debug)]
+  struct NewsArticle {
+    source: NewsArticleSource,
+    author: String,
+    title: String,
+    description: String,
+    content: String,
+    url: String,
+    publishedAt: String,
+  }
+  #[derive(Serialize, Deserialize, Debug)]
+  struct NOD {
+    articles: Vec<NewsArticle>
+  }
+  match make_request::<NOD>(nod_url).await {
+    Ok(data) => HttpResponse::Ok().json(data),
+    Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
+  }
 }
