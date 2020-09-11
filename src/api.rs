@@ -188,6 +188,7 @@ pub async fn news_of_day() -> impl Responder {
   struct NewsArticleSource {
     name: String
   }
+  #[allow(non_snake_case)]
   #[derive(Serialize, Deserialize, Debug)]
   struct NewsArticle {
     source: NewsArticleSource,
