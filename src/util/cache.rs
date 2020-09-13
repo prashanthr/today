@@ -1,3 +1,4 @@
+use core::fmt::Debug;
 extern crate lru;
 
 use lru::LruCache;
@@ -20,4 +21,11 @@ pub fn get<T: Copy>(mut cache: LruCache<String, T>, key: String) -> T {
 
 pub fn put<T>(mut cache: LruCache<String, T>, key: String, value: T) {
   cache.put(key, value);
+}
+
+pub fn print<T: Debug>(mut cache: LruCache<String, T>) {
+  println!("Printing cache values");
+  for (key, val) in cache.iter() {
+    println!("key: {} val: {:?}", key, val);
+  }
 }

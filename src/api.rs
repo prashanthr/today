@@ -37,23 +37,29 @@ pub async fn test() -> impl Responder {
   Quote of day
 */
 pub async fn quote_of_day() -> impl Responder {
-  #[derive(Serialize, Deserialize, Debug)]
+  /* Cache */
+  #[derive(Serialize, Deserialize, Debug, Clone)]
   struct Quote {
     quote: String,
     author: String
   };
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize, Debug, Clone)]
   struct Contents {
     quotes: Vec<Quote>
   };
-  #[derive(Serialize, Deserialize, Debug)]
+  #[derive(Serialize, Deserialize, Debug, Clone)]
   struct QOD {
     contents: Contents,
   };
+  let mut quote_cache = util::cache::create::<Vec<Quote>>(2);
+  util::cache::print::<Vec<Quote>>(quote_cache);
   let qod_url: &str = "http://quotes.rest/qod.json?category=inspire&language=en";
   match util::http_client::make_request::<QOD>(qod_url).await {
     Ok(data) => {
       println!("Inner {:?}", data);
+      //util::cache::put::<Vec<Quote>>(quote_cache, String::from("QOD"), data.contents.quotes);
+      //util::cache::print::<Vec<Quote>>(quote_cache);
+      //quote_cache.put(String::from("QOD"), data.contents.quotes);
       HttpResponse::Ok()
         .json(data.contents.quotes)
     },
