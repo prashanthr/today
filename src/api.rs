@@ -51,17 +51,24 @@ pub async fn quote_of_day() -> impl Responder {
   struct QOD {
     contents: Contents,
   };
+
   let mut quote_cache = util::cache::create::<Vec<Quote>>(2);
   util::cache::print::<Vec<Quote>>(quote_cache);
+  let mut cache_map: HashMap<String, Vec<Quote>> = HashMap::new();
   let qod_url: &str = "http://quotes.rest/qod.json?category=inspire&language=en";
   match util::http_client::make_request::<QOD>(qod_url).await {
     Ok(data) => {
       println!("Inner {:?}", data);
       //util::cache::put::<Vec<Quote>>(quote_cache, String::from("QOD"), data.contents.quotes);
       //util::cache::print::<Vec<Quote>>(quote_cache);
-      //quote_cache.put(String::from("QOD"), data.contents.quotes);
+      // quote_cache.put(String::from("QOD"), data.contents.quotes);
+      let result = data.clone();
+      let r2 = data.clone();
+      cache_map.insert(String::from("QOD"), result.contents.quotes);
+      println!("Cache map val {:?}", cache_map.get("QOD"));
+      // util::cache::put::<Vec<Quote>>(quote_cache, String::from("QOD"), result.contents.quotes);
       HttpResponse::Ok()
-        .json(data.contents.quotes)
+        .json(r2.contents.quotes)
     },
     Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
