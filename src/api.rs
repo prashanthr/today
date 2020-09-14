@@ -1,5 +1,6 @@
 
 use actix_web::{web, HttpResponse, Responder, http};
+use std::sync::Mutex;
 use http::StatusCode;
 use std::collections::HashMap;
 
@@ -7,6 +8,7 @@ extern crate serde;
 use serde::{Deserialize, Serialize};
 
 use crate::util;
+use crate::types::{AppCache, QOD, Quote, Contents};
 
 /* Route Handlers */
 
@@ -36,39 +38,34 @@ pub async fn test() -> impl Responder {
 /*
   Quote of day
 */
-pub async fn quote_of_day() -> impl Responder {
+pub async fn quote_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
   /* Cache */
-  #[derive(Serialize, Deserialize, Debug, Clone)]
-  struct Quote {
-    quote: String,
-    author: String
-  };
-  #[derive(Serialize, Deserialize, Debug, Clone)]
-  struct Contents {
-    quotes: Vec<Quote>
-  };
-  #[derive(Serialize, Deserialize, Debug, Clone)]
-  struct QOD {
-    contents: Contents,
-  };
+  // #[derive(Serialize, Deserialize, Debug, Clone)]
+  // struct Quote {
+  //   quote: String,
+  //   author: String
+  // };
+  // #[derive(Serialize, Deserialize, Debug, Clone)]
+  // struct Contents {
+  //   quotes: Vec<Quote>
+  // };
+  // #[derive(Serialize, Deserialize, Debug, Clone)]
+  // struct QOD {
+  //   contents: Contents,
+  // };
 
-  let mut quote_cache = util::cache::create::<Vec<Quote>>(2);
-  util::cache::print::<Vec<Quote>>(quote_cache);
-  let mut cache_map: HashMap<String, Vec<Quote>> = HashMap::new();
+  let mut app_cache = data.lock().unwrap();
+  println!("wod cache data: {:?}", app_cache.qod);
   let qod_url: &str = "http://quotes.rest/qod.json?category=inspire&language=en";
   match util::http_client::make_request::<QOD>(qod_url).await {
     Ok(data) => {
       println!("Inner {:?}", data);
-      //util::cache::put::<Vec<Quote>>(quote_cache, String::from("QOD"), data.contents.quotes);
-      //util::cache::print::<Vec<Quote>>(quote_cache);
-      // quote_cache.put(String::from("QOD"), data.contents.quotes);
-      let result = data.clone();
-      let r2 = data.clone();
-      cache_map.insert(String::from("QOD"), result.contents.quotes);
-      println!("Cache map val {:?}", cache_map.get("QOD"));
-      // util::cache::put::<Vec<Quote>>(quote_cache, String::from("QOD"), result.contents.quotes);
+      if !app_cache.qod_exists() {
+        let cache_copy = data.clone();
+        app_cache.qod = Some(cache_copy.contents.quotes);
+      }
       HttpResponse::Ok()
-        .json(r2.contents.quotes)
+        .json(app_cache.qod.as_ref()) //data.contents.quotes
     },
     Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
@@ -81,7 +78,8 @@ pub struct WODRequest {
 /*
   Wrather of day
 */
-pub async fn weather_of_day(info: web::Query<WODRequest>) -> impl Responder {
+pub async fn weather_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<WODRequest>) -> impl Responder {
+  println!("wod cache data: {:?}", data.lock().unwrap().qod);
   let resolved_location: String = match &info.location {
     None => String::from(""),
     Some(loc) => loc.to_string(),
