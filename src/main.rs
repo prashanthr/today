@@ -1,18 +1,35 @@
 use actix_web::{web, App, HttpServer};
+use std::sync::Mutex;
 
 mod api;
 mod util;
+mod types;
+
+use types::AppCache;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let app_name: String = String::from("today");
-    let host: String = util::environment::get_env("TODAY_API_HOST", Some("127.0.0.1"));// api::get_env("TODAY_API_HOST", Some("127.0.0.1"));
+    let host: String = util::environment::get_env("TODAY_API_HOST", Some("127.0.0.1"));
     let port: String =  util::environment::get_env("TODAY_API_PORT", Some("8088"));
+
+    // AppCache shared data
+    let app_data = web::Data::new(
+        Mutex::new(
+            AppCache { 
+                qod: None,
+                wod: None,
+                nod: None,
+                datetime: None
+            }
+        )
+    );
     
     println!("Running {} server at {}:{}", app_name, host, port);
-    
-    HttpServer::new(|| {
+
+    HttpServer::new(move || {
         App::new()
+            .app_data(app_data.clone())
             .route("/", web::get().to(api::health))
             .route("/health", web::get().to(api::health))
             .route("/test", web::get().to(api::test))

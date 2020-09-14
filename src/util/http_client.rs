@@ -23,7 +23,6 @@ pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str) -> Re
     .send()
     .await {
       Ok(data) =>  {
-        println!("Rez {:?}", data);
         match data.status().is_success() {
           true => Ok(data.json::<T>().await.unwrap()),
           false => panic!("Received non OK response")
