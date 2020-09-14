@@ -49,7 +49,6 @@ pub async fn quote_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
   } else {
     match util::http_client::make_request::<QOD>(qod_url).await {
       Ok(data) => {
-        println!("Inner {:?}", data);
         app_cache.qod = Some(data.clone().contents.quotes);
         HttpResponse::Ok()
           .json(data.contents.quotes)
