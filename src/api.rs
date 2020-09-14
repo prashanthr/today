@@ -8,7 +8,7 @@ extern crate serde;
 use serde::{Deserialize, Serialize};
 
 use crate::util;
-use crate::types::{AppCache, QOD, Quote, Contents};
+use crate::types::{AppCache, QOD};
 
 /* Route Handlers */
 
@@ -39,35 +39,23 @@ pub async fn test() -> impl Responder {
   Quote of day
 */
 pub async fn quote_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
-  /* Cache */
-  // #[derive(Serialize, Deserialize, Debug, Clone)]
-  // struct Quote {
-  //   quote: String,
-  //   author: String
-  // };
-  // #[derive(Serialize, Deserialize, Debug, Clone)]
-  // struct Contents {
-  //   quotes: Vec<Quote>
-  // };
-  // #[derive(Serialize, Deserialize, Debug, Clone)]
-  // struct QOD {
-  //   contents: Contents,
-  // };
-
   let mut app_cache = data.lock().unwrap();
-  println!("wod cache data: {:?}", app_cache.qod);
+  app_cache.print();
   let qod_url: &str = "http://quotes.rest/qod.json?category=inspire&language=en";
-  match util::http_client::make_request::<QOD>(qod_url).await {
-    Ok(data) => {
-      println!("Inner {:?}", data);
-      if !app_cache.qod_exists() {
+  if app_cache.qod_exists() {
+    HttpResponse::Ok()
+          .json(app_cache.qod.as_ref())
+  } else {
+    match util::http_client::make_request::<QOD>(qod_url).await {
+      Ok(data) => {
+        println!("Inner {:?}", data);
         let cache_copy = data.clone();
         app_cache.qod = Some(cache_copy.contents.quotes);
-      }
-      HttpResponse::Ok()
-        .json(app_cache.qod.as_ref()) //data.contents.quotes
-    },
-    Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
+        HttpResponse::Ok()
+          .json(data.contents.quotes)
+      },
+      Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
+    }
   }
 }
 

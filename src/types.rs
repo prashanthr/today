@@ -7,7 +7,15 @@ pub struct AppCache {
 
 impl AppCache {
   pub fn qod_exists(&self) -> bool {
-    !self.qod.is_none()
+    let is_full = !self.qod.is_none();
+    println!("QOD cache is {}", if is_full { "full"  } else { "empty" });
+    is_full
+  }
+  pub fn print(&self) {
+    println!("AppCache data:");
+    println!("QOD: {:?}", self.qod);
+    // println!("WOD: {:?}", self.qod);
+    // println!("WOD: {:?}", self.qod);
   }
 }
 
