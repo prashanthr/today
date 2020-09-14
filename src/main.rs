@@ -1,18 +1,43 @@
 use actix_web::{web, App, HttpServer};
+use std::sync::Mutex;
 
-mod route_handler;
+mod api;
+mod util;
+mod types;
+
+use types::AppCache;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    const HOST: &str = "127.0.0.1";
-    const PORT: i32 = 8088;
+    let app_name: String = String::from("today");
+    let host: String = util::environment::get_env("TODAY_API_HOST", Some("127.0.0.1"));
+    let port: String =  util::environment::get_env("TODAY_API_PORT", Some("8088"));
 
-    HttpServer::new(|| {
+    // AppCache shared data
+    let app_data = web::Data::new(
+        Mutex::new(
+            AppCache { 
+                qod: None,
+                wod: None,
+                nod: None,
+                datetime: None
+            }
+        )
+    );
+    
+    println!("Running {} server at {}:{}", app_name, host, port);
+
+    HttpServer::new(move || {
         App::new()
-            .route("/", web::get().to(route_handler::index))
-            .route("/again", web::get().to(route_handler::index2))
+            .app_data(app_data.clone())
+            .route("/", web::get().to(api::health))
+            .route("/health", web::get().to(api::health))
+            .route("/test", web::get().to(api::test))
+            .route("/nod", web::get().to(api::news_of_day))
+            .route("/qod", web::get().to(api::quote_of_day))
+            .route("/wod", web::get().to(api::weather_of_day))
     })
-    .bind(format!("{}:{}", HOST, PORT))?
+    .bind(format!("{}:{}", host, port))?
     .run()
     .await
 }
