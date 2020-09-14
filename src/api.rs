@@ -63,22 +63,37 @@ pub async fn quote_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
 */
 pub async fn weather_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<WODRequest>) -> impl Responder {
   let mut app_cache = data.lock().unwrap();
+  // let mut map = app_cache.wod.as_ref().unwrap();
   app_cache.print();
   let resolved_location: String = match &info.location {
     None => String::from("san francisco,usa"),
     Some(loc) => loc.to_string(),
   };
+  let resolved_location_cache = resolved_location.clone();
+  let resolved_location_cache_set = resolved_location.clone();
   let base_url: &str = "https://api.openweathermap.org/data/2.5/weather";
   let api_key: String = util::environment::get_env("WEATHER_API_KEY", None);
   let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&APPID=" + &api_key.to_owned());
   
-  if app_cache.wod_exists() {
+  if app_cache.wod_exists(resolved_location) {
     HttpResponse::Ok()
-          .json(app_cache.wod.as_ref())
+          .json(app_cache.wod.as_ref().unwrap().get(&resolved_location_cache))
   } else {
     match util::http_client::make_request::<WOD>(wod_url).await {
       Ok(data) => {
-        app_cache.wod = Some(data.clone());
+        //app_cache.wod.to_owned().unwrap().insert(resolved_location_cache_set, data.clone());
+        //app_cache.wod.clone().unwrap().insert(resolved_location_cache_set, data.clone());
+        let mut new_cache: HashMap<String, WOD> = HashMap::new();
+        if !app_cache.wod.as_ref().is_none() {
+          for (key, val) in app_cache.wod.as_ref().unwrap().iter() {
+            new_cache.insert((&key).to_string(), val.clone());
+          }
+        }
+        new_cache.insert(resolved_location_cache_set, data.clone());
+        app_cache.wod = Some(
+          new_cache.clone()
+        );
+        // map.insert(resolved_location_cache_set, data.clone());
         HttpResponse::Ok().json(data)
       },
       Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
@@ -100,7 +115,7 @@ pub async fn news_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
   } else {
     match util::http_client::make_request::<NOD>(nod_url).await {
       Ok(data) => {
-        app_cache.nod = Some(data.clone());
+        //app_cache.nod = Some(data.clone());
         HttpResponse::Ok().json(data)
       },
       Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())

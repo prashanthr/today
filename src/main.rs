@@ -19,7 +19,8 @@ async fn main() -> std::io::Result<()> {
             AppCache { 
                 qod: None,
                 wod: None,
-                nod: None
+                nod: None,
+                datetime: None
             }
         )
     );

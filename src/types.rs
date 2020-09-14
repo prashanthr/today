@@ -1,10 +1,12 @@
+use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AppCache {
   pub qod: Option<Vec<Quote>>,
-  pub wod: Option<WOD>,
-  pub nod: Option<NOD>
+  pub wod: Option<HashMap<String, WOD>>, // "san francisco,ca" -> ...
+  pub nod: Option<HashMap<String, NOD>>, // "country" -> ...
+  pub datetime: Option<i64>
 }
 
 impl AppCache {
@@ -13,8 +15,8 @@ impl AppCache {
     println!("QOD cache is {}", if is_full { "full"  } else { "empty" });
     is_full
   }
-  pub fn wod_exists(&self) -> bool {
-    let is_full = !self.wod.is_none();
+  pub fn wod_exists(&self, location: String) -> bool {
+    let is_full = !self.wod.is_none() && !self.wod.as_ref().unwrap().get(&location).is_none();
     println!("WOD cache is {}", if is_full { "full"  } else { "empty" });
     is_full
   }
@@ -103,6 +105,12 @@ pub struct WOD {
 }
 
 /* News of day */
+
+#[derive(Deserialize)]
+pub struct NODRequest {
+  pub country: Option<String>
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NewsArticleSource {
   pub id: Option<String>,
