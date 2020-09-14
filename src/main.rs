@@ -13,7 +13,16 @@ async fn main() -> std::io::Result<()> {
     let host: String = util::environment::get_env("TODAY_API_HOST", Some("127.0.0.1"));// api::get_env("TODAY_API_HOST", Some("127.0.0.1"));
     let port: String =  util::environment::get_env("TODAY_API_PORT", Some("8088"));
 
-    let app_data = web::Data::new(Mutex::new(AppCache { qod: None }));
+    // AppCache shared data
+    let app_data = web::Data::new(
+        Mutex::new(
+            AppCache { 
+                qod: None,
+                wod: None,
+                nod: None
+            }
+        )
+    );
     
     println!("Running {} server at {}:{}", app_name, host, port);
 
