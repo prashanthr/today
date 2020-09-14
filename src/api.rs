@@ -8,7 +8,7 @@ extern crate serde;
 use serde::{Deserialize, Serialize};
 
 use crate::util;
-use crate::types::{AppCache, QOD, WODRequest, WOD, NOD};
+use crate::types::{AppCache, QOD, WODRequest, WOD, NODRequest, NOD};
 
 /* Route Handlers */
 
@@ -23,7 +23,9 @@ pub async fn health() -> impl Responder {
 /*
   Test Route
 */
-pub async fn test() -> impl Responder {
+pub async fn test(data: web::Data<Mutex<AppCache>>) -> impl Responder {
+  let app_cache = data.lock().unwrap();
+  app_cache.print();
   #[derive(Serialize, Deserialize, Debug)]
   struct Ip {
     origin: String,
@@ -40,7 +42,6 @@ pub async fn test() -> impl Responder {
 */
 pub async fn quote_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
   let mut app_cache = data.lock().unwrap();
-  app_cache.print();
   let qod_url: &str = "http://quotes.rest/qod.json?category=inspire&language=en";
   if app_cache.qod_exists() {
     HttpResponse::Ok()
@@ -63,14 +64,11 @@ pub async fn quote_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
 */
 pub async fn weather_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<WODRequest>) -> impl Responder {
   let mut app_cache = data.lock().unwrap();
-  // let mut map = app_cache.wod.as_ref().unwrap();
-  app_cache.print();
   let resolved_location: String = match &info.location {
     None => String::from("san francisco,usa"),
     Some(loc) => loc.to_string(),
   };
   let resolved_location_cache = resolved_location.clone();
-  let resolved_location_cache_set = resolved_location.clone();
   let base_url: &str = "https://api.openweathermap.org/data/2.5/weather";
   let api_key: String = util::environment::get_env("WEATHER_API_KEY", None);
   let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&APPID=" + &api_key.to_owned());
@@ -81,19 +79,16 @@ pub async fn weather_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<W
   } else {
     match util::http_client::make_request::<WOD>(wod_url).await {
       Ok(data) => {
-        //app_cache.wod.to_owned().unwrap().insert(resolved_location_cache_set, data.clone());
-        //app_cache.wod.clone().unwrap().insert(resolved_location_cache_set, data.clone());
-        let mut new_cache: HashMap<String, WOD> = HashMap::new();
-        if !app_cache.wod.as_ref().is_none() {
-          for (key, val) in app_cache.wod.as_ref().unwrap().iter() {
-            new_cache.insert((&key).to_string(), val.clone());
-          }
-        }
-        new_cache.insert(resolved_location_cache_set, data.clone());
+        let mut new_cache: HashMap<String, WOD> = 
+          if !app_cache.wod.as_ref().is_none() {
+            app_cache.wod.clone().unwrap()
+          } else {
+            HashMap::new()
+          };
+        new_cache.insert(resolved_location_cache.clone(), data.clone());
         app_cache.wod = Some(
           new_cache.clone()
         );
-        // map.insert(resolved_location_cache_set, data.clone());
         HttpResponse::Ok().json(data)
       },
       Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
@@ -103,19 +98,34 @@ pub async fn weather_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<W
 /*
   News of day
 */
-pub async fn news_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
+pub async fn news_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<NODRequest>) -> impl Responder {
   let mut app_cache = data.lock().unwrap();
-  app_cache.print();
   let base_url: &str = "http://newsapi.org/v2/top-headlines";
-  let country = "us";
+  let resolved_country_code: String = match &info.country {
+    None => String::from("us"),
+    Some(country) => country.to_string(),
+  };
+  let resolved_country_code_cache = resolved_country_code.clone();
   let api_key: String = util::environment::get_env("NEWS_API_KEY", None);
-  let nod_url: &str = &(base_url.to_owned() + "?country=" + country + "&apiKey=" + &api_key.to_owned());
-  if app_cache.nod_exists() {
-    HttpResponse::Ok().json(app_cache.nod.as_ref())
+  let nod_url: &str = &(base_url.to_owned() + "?country=" + &resolved_country_code.to_owned() + "&apiKey=" + &api_key.to_owned());
+  
+  if app_cache.nod_exists(resolved_country_code) {
+    HttpResponse::Ok().json(
+      app_cache.nod.as_ref().unwrap().get(&resolved_country_code_cache)
+    )
   } else {
     match util::http_client::make_request::<NOD>(nod_url).await {
       Ok(data) => {
-        //app_cache.nod = Some(data.clone());
+        let mut new_cache: HashMap<String, NOD> = 
+          if !app_cache.nod.as_ref().is_none() {
+            app_cache.nod.clone().unwrap()
+          } else {
+            HashMap::new()
+          };
+        new_cache.insert(resolved_country_code_cache.clone(), data.clone());
+        app_cache.nod = Some(
+          new_cache.clone()
+        );
         HttpResponse::Ok().json(data)
       },
       Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())

@@ -16,13 +16,13 @@ impl AppCache {
     is_full
   }
   pub fn wod_exists(&self, location: String) -> bool {
-    let is_full = !self.wod.is_none() && !self.wod.as_ref().unwrap().get(&location).is_none();
-    println!("WOD cache is {}", if is_full { "full"  } else { "empty" });
-    is_full
+    let exists = !self.wod.is_none() && !self.wod.as_ref().unwrap().get(&location).is_none();
+    println!("WOD cache for lookup {} is {}", location, if exists { "full"  } else { "empty" });
+    exists
   }
-  pub fn nod_exists(&self) -> bool {
-    let is_full = !self.nod.is_none();
-    println!("NOD cache is {}", if is_full { "full"  } else { "empty" });
+  pub fn nod_exists(&self, country: String) -> bool {
+    let is_full = !self.nod.is_none() && !self.nod.as_ref().unwrap().get(&country).is_none();
+    println!("NOD cache for lookup {} is {}", country, if is_full { "full"  } else { "empty" });
     is_full
   }
   pub fn print(&self) {
