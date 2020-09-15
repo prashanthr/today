@@ -8,7 +8,7 @@ extern crate serde;
 use serde::{Deserialize, Serialize};
 
 use crate::util;
-use crate::types::{AppCache, QOD, WODRequest, WOD, NODRequest, NOD};
+use crate::types::{AppCache, QOD, WODRequest, WOD, NODRequest, NOD, HOD};
 
 /* Route Handlers */
 
@@ -134,3 +134,26 @@ pub async fn news_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<NODR
     }
   }
 }
+
+/*
+  History of day
+*/
+pub async fn history_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
+  let mut app_cache = data.lock().unwrap();
+  let qod_url: &str = "https://history.muffinlabs.com/date";
+  if app_cache.hod_exists() {
+    HttpResponse::Ok()
+          .json(app_cache.hod.as_ref())
+  } else {
+    match util::http_client::make_request::<HOD>(qod_url).await {
+      Ok(data) => {
+        app_cache.hod = Some(data.clone());
+        app_cache.hod_dt = Some(util::datetime::now());
+        HttpResponse::Ok()
+          .json(data)
+      },
+      Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
+    }
+  }
+}
+
