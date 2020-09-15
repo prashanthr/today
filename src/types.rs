@@ -5,13 +5,6 @@ use crate::util;
 
 /* AppCache */
 
-// #[derive(Debug, Clone, Copy)]
-// pub struct AppCacheDT {
-//   pub qod: Option<DateTime<Utc>>,
-//   pub wod: Option<DateTime<Utc>>,
-//   pub nod: Option<DateTime<Utc>>
-// }
-
 #[derive(Debug, Clone)]
 pub struct AppCache {
   pub qod: Option<Vec<Quote>>,
@@ -29,7 +22,7 @@ impl AppCache {
     match exists {
       true => {
         match self.qod_dt {
-          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(6)),
+          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(12)),
           None => exists,
         }
       },
@@ -43,7 +36,7 @@ impl AppCache {
     match exists {
       true => {
         match self.wod_dt {
-          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(6)),
+          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(3)),
           None => exists,
         }
       },
