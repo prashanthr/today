@@ -1,37 +1,67 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use chrono::{DateTime,Duration, Utc};
+use crate::util;
 
 /* AppCache */
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct AppCache {
   pub qod: Option<Vec<Quote>>,
   pub wod: Option<HashMap<String, WOD>>, // "san francisco,ca" -> ...
   pub nod: Option<HashMap<String, NOD>>, // "country" -> ...
-  pub datetime: Option<i64>
+  pub qod_dt: Option<DateTime<Utc>>,
+  pub wod_dt: Option<DateTime<Utc>>,
+  pub nod_dt: Option<DateTime<Utc>>,
 }
 
 impl AppCache {
   pub fn qod_exists(&self) -> bool {
     let exists = !self.qod.is_none();
-    println!("QOD cache is {}", if exists { "full"  } else { "empty" });
-    exists
+    println!("\nQOD cache is {}", if exists { "full"  } else { "empty" });
+    match exists {
+      true => {
+        match self.qod_dt {
+          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(12)),
+          None => exists,
+        }
+      },
+      false => exists
+    }
   }
+  
   pub fn wod_exists(&self, location: String) -> bool {
     let exists = !self.wod.is_none() && !self.wod.as_ref().unwrap().get(&location).is_none();
-    println!("WOD cache for lookup {} is {}", location, if exists { "full"  } else { "empty" });
-    exists
+    println!("\nWOD cache for lookup {} is {}", location, if exists { "full"  } else { "empty" });
+    match exists {
+      true => {
+        match self.wod_dt {
+          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(3)),
+          None => exists,
+        }
+      },
+      false => exists
+    }
   }
   pub fn nod_exists(&self, country: String) -> bool {
     let exists = !self.nod.is_none() && !self.nod.as_ref().unwrap().get(&country).is_none();
-    println!("NOD cache for lookup {} is {}", country, if exists { "full"  } else { "empty" });
-    exists
+    println!("\nNOD cache for lookup {} is {}", country, if exists { "full"  } else { "empty" });
+    match exists {
+      true => {
+        match self.nod_dt {
+          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(6)),
+          None => exists,
+        }
+      },
+      false => exists
+    }
   }
   pub fn print(&self) {
-    println!("AppCache data:");
-    println!("QOD: {:?}", self.qod);
-    println!("WOD: {:?}", self.wod);
-    println!("NOD: {:?}", self.nod);
+    println!("\n-----AppCache data-----");
+    println!("QOD: {:?} {:?}", self.qod, self.qod_dt);
+    println!("WOD: {:?} {:?}", self.wod, self.wod_dt);
+    println!("NOD: {:?} {:?}", self.nod, self.nod_dt);
+    println!("-----------------\n");
   }
 }
 

@@ -50,6 +50,7 @@ pub async fn quote_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
     match util::http_client::make_request::<QOD>(qod_url).await {
       Ok(data) => {
         app_cache.qod = Some(data.clone().contents.quotes);
+        app_cache.qod_dt = Some(util::datetime::now());
         HttpResponse::Ok()
           .json(data.contents.quotes)
       },
@@ -88,6 +89,7 @@ pub async fn weather_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<W
         app_cache.wod = Some(
           new_cache.clone()
         );
+        app_cache.wod_dt = Some(util::datetime::now());
         HttpResponse::Ok().json(data)
       },
       Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
@@ -125,6 +127,7 @@ pub async fn news_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<NODR
         app_cache.nod = Some(
           new_cache.clone()
         );
+        app_cache.nod_dt = Some(util::datetime::now());
         HttpResponse::Ok().json(data)
       },
       Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())

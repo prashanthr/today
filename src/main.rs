@@ -20,7 +20,9 @@ async fn main() -> std::io::Result<()> {
                 qod: None,
                 wod: None,
                 nod: None,
-                datetime: None
+                qod_dt: None,
+                wod_dt: None,
+                nod_dt: None
             }
         )
     );
