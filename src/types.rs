@@ -105,7 +105,8 @@ pub struct QOD {
 
 #[derive(Deserialize)]
 pub struct WODRequest {
-  pub location: Option<String>
+  pub location: Option<String>,
+  pub unit: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -158,7 +159,8 @@ pub struct WOD {
 
 #[derive(Deserialize)]
 pub struct NODRequest {
-  pub country: Option<String>
+  pub country: Option<String>,
+  pub limit: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -185,6 +187,11 @@ pub struct NOD {
 }
 
 /* History of day */
+
+#[derive(Deserialize)]
+pub struct HODRequest {
+  pub limit: Option<u32>
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HODLink {
@@ -218,7 +225,10 @@ pub struct HOD {
 #[derive(Deserialize)]
 pub struct TodayRequest {
   pub location: Option<String>,
-  pub country: Option<String>
+  pub country: Option<String>,
+  pub wod_unit: Option<String>,
+  pub nod_limit: Option<u32>,
+  pub hod_limit: Option<u32>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

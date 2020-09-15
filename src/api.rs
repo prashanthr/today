@@ -13,7 +13,7 @@ use crate::types::{
   QOD, Quote,
   WODRequest, WOD, 
   NODRequest, NOD, 
-  HOD,
+  HODRequest, HOD,
   TodayRequest, TodayResponse
 };
 
@@ -81,10 +81,14 @@ pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Op
     None => String::from("san francisco,usa"),
     Some(loc) => loc.to_string(),
   };
+  let unit = match params.unit {
+    None => String::from("metric"),
+    Some(u) => u.to_string()
+  };
   let resolved_location_cache = resolved_location.clone();
   let base_url: &str = "https://api.openweathermap.org/data/2.5/weather";
-  let api_key: String = util::environment::get_env("WEATHER_API_KEY", None);
-  let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&APPID=" + &api_key.to_owned());
+  let api_key: String = util::environment::get_env("TODAY_WEATHER_API_KEY", None);
+  let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&units=" + &unit.to_owned() + "&APPID=" + &api_key.to_owned());
   
   if app_cache.wod_exists(resolved_location) {
     Some(
@@ -114,7 +118,7 @@ pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Op
 }
 
 pub async fn weather_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<WODRequest>) -> impl Responder {
-  match get_wod(data, WODRequest { location: info.location.to_owned() }).await {
+  match get_wod(data, WODRequest { location: info.location.to_owned(), unit: info.unit.to_owned() }).await {
     Some(result) => HttpResponse::Ok().json(result),
     None => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
@@ -130,9 +134,14 @@ pub async fn get_nod(data: web::Data<Mutex<AppCache>>, params: NODRequest) -> Op
     None => String::from("us"),
     Some(country) => country.to_string(),
   };
+  println!("nod limit {:?}", params.limit);
+  let limit: u32 =  match params.limit {
+    None => 20,
+    Some(l) => l
+  };
   let resolved_country_code_cache = resolved_country_code.clone();
-  let api_key: String = util::environment::get_env("NEWS_API_KEY", None);
-  let nod_url: &str = &(base_url.to_owned() + "?country=" + &resolved_country_code.to_owned() + "&apiKey=" + &api_key.to_owned());
+  let api_key: String = util::environment::get_env("TODAY_NEWS_API_KEY", None);
+  let nod_url: &str = &(base_url.to_owned() + "?country=" + &resolved_country_code.to_owned() + "&pageSize=" + &limit.to_string() + "&apiKey=" + &api_key.to_owned());
   
   if app_cache.nod_exists(resolved_country_code) {
     Some(
@@ -162,7 +171,7 @@ pub async fn get_nod(data: web::Data<Mutex<AppCache>>, params: NODRequest) -> Op
 }
 
 pub async fn news_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<NODRequest>) -> impl Responder {
-  match get_nod(data, NODRequest { country: info.country.to_owned() }).await {
+  match get_nod(data, NODRequest { country: info.country.to_owned(), limit: info.limit }).await {
     Some(result) => HttpResponse::Ok().json(result),
     None => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
@@ -172,7 +181,7 @@ pub async fn news_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<NODR
   History of day
 */
 
-pub async fn get_hod (data: web::Data<Mutex<AppCache>>) -> Option<HOD> {
+pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> Option<HOD> {
   let mut app_cache = data.lock().unwrap();
   let qod_url: &str = "https://history.muffinlabs.com/date";
   if app_cache.hod_exists() {
@@ -182,15 +191,24 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>) -> Option<HOD> {
       Ok(data) => {
         app_cache.hod = Some(data.clone());
         app_cache.hod_dt = Some(util::datetime::now());
-        Some(data)
+        match params.limit {
+          None => Some(data),
+          Some(limit) => {
+            let mut mut_result = data.clone();          
+            mut_result.data.Events = util::vector::get_slice(data.data.Events, 0, limit as usize);
+            mut_result.data.Births = util::vector::get_slice(data.data.Births, 0, limit as usize);
+            mut_result.data.Deaths = util::vector::get_slice(data.data.Deaths, 0, limit as usize);
+            Some(mut_result)
+          }
+        }
       },
       Err(_err) => None
     }
   }
 }
 
-pub async fn history_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
-  match get_hod(data).await {
+pub async fn history_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<HODRequest>) -> impl Responder {
+  match get_hod(data, HODRequest { limit: info.limit }).await {
     Some(result) => HttpResponse::Ok().json(result),
     None => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }
@@ -199,9 +217,9 @@ pub async fn history_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder 
 /* Today - Unified API */
 pub async fn today(data: web::Data<Mutex<AppCache>>, info: web::Query<TodayRequest>) -> impl Responder {
   let qod = get_qod(data.clone()).await;
-  let wod = get_wod(data.clone(), WODRequest { location: info.location.to_owned() }).await;
-  let nod = get_nod(data.clone(), NODRequest { country: info.country.to_owned() }).await;
-  let hod = get_hod(data.clone()).await;
+  let wod = get_wod(data.clone(), WODRequest { location: info.location.to_owned(), unit: info.wod_unit.to_owned() }).await;
+  let nod = get_nod(data.clone(), NODRequest { country: info.country.to_owned(), limit: info.nod_limit }).await;
+  let hod = get_hod(data.clone(), HODRequest { limit: info.hod_limit }).await;
   HttpResponse::Ok().json::<TodayResponse>(
     TodayResponse { 
       qod,
