@@ -10,9 +10,11 @@ pub struct AppCache {
   pub qod: Option<Vec<Quote>>,
   pub wod: Option<HashMap<String, WOD>>, // "san francisco,ca" -> ...
   pub nod: Option<HashMap<String, NOD>>, // "country" -> ...
+  pub hod: Option<HOD>,
   pub qod_dt: Option<DateTime<Utc>>,
   pub wod_dt: Option<DateTime<Utc>>,
   pub nod_dt: Option<DateTime<Utc>>,
+  pub hod_dt: Option<DateTime<Utc>>
 }
 
 impl AppCache {
@@ -56,11 +58,27 @@ impl AppCache {
       false => exists
     }
   }
+
+  pub fn hod_exists(&self) -> bool {
+    let exists = !self.hod.is_none();
+    println!("\nHOD cache is {}", if exists { "full"  } else { "empty" });
+    match exists {
+      true => {
+        match self.hod_dt {
+          Some(field_dt) => util::datetime::in_range(field_dt, Duration::days(1)),
+          None => exists,
+        }
+      },
+      false => exists
+    }
+  }
+
   pub fn print(&self) {
     println!("\n-----AppCache data-----");
     println!("QOD: {:?} {:?}", self.qod, self.qod_dt);
     println!("WOD: {:?} {:?}", self.wod, self.wod_dt);
     println!("NOD: {:?} {:?}", self.nod, self.nod_dt);
+    println!("HOD: {:?} {:?}", self.hod, self.hod_dt);
     println!("-----------------\n");
   }
 }
@@ -164,4 +182,34 @@ pub struct NewsArticle {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NOD {
   pub articles: Vec<NewsArticle>
+}
+
+/* History of day */
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct HODLink {
+  title: Option<String>,
+  link: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct HODItem {
+  pub year: Option<String>,
+  pub text: Option<String>,
+  pub links: Vec<HODLink>
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct HODData {
+  pub Events: Vec<HODItem>,
+  pub Births: Vec<HODItem>,
+  pub Deaths: Vec<HODItem>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct HOD {
+  pub date: Option<String>,
+  pub url: Option<String>,
+  pub data: HODData
 }
