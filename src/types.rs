@@ -213,3 +213,18 @@ pub struct HOD {
   pub url: Option<String>,
   pub data: HODData
 }
+
+/* Today Unified API  */
+#[derive(Deserialize)]
+pub struct TodayRequest {
+  pub location: Option<String>,
+  pub country: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TodayResponse {
+  pub qod: Option<Vec<Quote>>,
+  pub wod: Option<WOD>,
+  pub nod: Option<NOD>,
+  pub hod: Option<HOD>
+}

@@ -36,11 +36,12 @@ async fn main() -> std::io::Result<()> {
             .app_data(app_data.clone())
             .route("/", web::get().to(api::health))
             .route("/health", web::get().to(api::health))
-            .route("/test", web::get().to(api::test))
+            .route("/debug", web::get().to(api::debug))
             .route("/nod", web::get().to(api::news_of_day))
             .route("/qod", web::get().to(api::quote_of_day))
             .route("/wod", web::get().to(api::weather_of_day))
             .route("/hod", web::get().to(api::history_of_day))
+            .route("/today", web::get().to(api::today))
     })
     .bind(format!("{}:{}", host, port))?
     .run()
