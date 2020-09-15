@@ -5,7 +5,7 @@ mod api;
 mod util;
 mod types;
 
-use types::{AppCache, AppCacheDT};
+use types::AppCache;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -20,13 +20,9 @@ async fn main() -> std::io::Result<()> {
                 qod: None,
                 wod: None,
                 nod: None,
-                datetime: Some(
-                    AppCacheDT {
-                        qod: None,
-                        wod: None,
-                        nod: None
-                    }
-                )
+                qod_dt: None,
+                wod_dt: None,
+                nod_dt: None
             }
         )
     );
