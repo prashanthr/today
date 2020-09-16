@@ -4,9 +4,6 @@ use std::sync::Mutex;
 use http::StatusCode;
 use std::collections::HashMap;
 
-extern crate serde;
-use serde::{Deserialize, Serialize};
-
 use crate::util;
 use crate::types::{
   AppCache, 
@@ -33,15 +30,10 @@ pub async fn health() -> impl Responder {
 pub async fn debug(data: web::Data<Mutex<AppCache>>) -> impl Responder {
   let app_cache = data.lock().unwrap();
   app_cache.print();
-  #[derive(Serialize, Deserialize, Debug)]
-  struct Ip {
-    origin: String,
-  };
-  let test_url: &str = "https://httpbin.org/ip";
-  match util::http_client::make_request::<Ip>(test_url).await {
-    Ok(data) => HttpResponse::Ok().json(data),
-    Err(_err) => HttpResponse::new(StatusCode::from_u16(500).unwrap())
-  }
+  HttpResponse::Ok()
+    .json::<HashMap<&str, &str>>(
+      [("debug", "ok")].iter().cloned().collect()
+    )
 }
 
 /*
@@ -134,10 +126,6 @@ pub async fn get_nod(data: web::Data<Mutex<AppCache>>, params: NODRequest) -> Op
     None => String::from("us"),
     Some(country) => country.to_string(),
   };
-  let limit: u32 =  match params.limit {
-    None => 20,
-    Some(l) => l
-  };
   let resolved_country_code_cache = resolved_country_code.clone();
   let api_key: String = util::environment::get_env("TODAY_NEWS_API_KEY", None);
   let nod_url: &str = &(base_url.to_owned() + "?country=" + &resolved_country_code.to_owned() + "&pageSize=100" + "&apiKey=" + &api_key.to_owned());
@@ -170,6 +158,10 @@ pub async fn get_nod(data: web::Data<Mutex<AppCache>>, params: NODRequest) -> Op
 
   match result {
     Some(data) => {
+      let limit: u32 =  match params.limit {
+        None => 20,
+        Some(l) => l
+      };
       let mut mut_data = data.clone();
       mut_data.articles = util::vector::get_slice(data.articles, 0, limit as usize);
       Some(mut_data)
