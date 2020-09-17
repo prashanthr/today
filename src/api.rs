@@ -91,18 +91,21 @@ pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Op
   } else {
     match util::http_client::make_request::<WOD>(wod_url).await {
       Ok(data) => {
+        let mut mut_data = data.clone();
         let mut new_cache: HashMap<String, WOD> = 
           if !app_cache.wod.as_ref().is_none() {
             app_cache.wod.clone().unwrap()
           } else {
             HashMap::new()
           };
-        new_cache.insert(resolved_location_cache.clone(), data.clone());
+        // Update icon url
+        mut_data.weather[0].icon = String::from(format!("https://openweathermap.org/img/wn/{}.png", mut_data.weather[0].icon));
+        new_cache.insert(resolved_location_cache.clone(), mut_data.clone());
         app_cache.wod = Some(
           new_cache.clone()
         );
         app_cache.wod_dt = Some(util::datetime::now());
-        Some(data)
+        Some(mut_data)
       },
       Err(_err) => None
     }
