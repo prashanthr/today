@@ -77,15 +77,18 @@ pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Op
     None => String::from("metric"),
     Some(u) => u.to_string()
   };
-  let resolved_location_cache = resolved_location.clone();
+  let cache_key = resolved_location.clone() + &unit.clone();
+  let get_cache_key = cache_key.clone();
+  let set_cache_key = cache_key.clone();
+  //let resolved_location_cache = cache_key.clone();
   let base_url: &str = "https://api.openweathermap.org/data/2.5/weather";
   let api_key: String = util::environment::get_env("TODAY_WEATHER_API_KEY", None);
   let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&units=" + &unit.to_owned() + "&APPID=" + &api_key.to_owned());
   
-  if app_cache.wod_exists(resolved_location) {
+  if app_cache.wod_exists(cache_key) {
     Some(
       app_cache
-        .wod.as_ref().unwrap().get(&resolved_location_cache)
+        .wod.as_ref().unwrap().get(&get_cache_key)
         .unwrap().clone()
     )
   } else {
@@ -100,7 +103,7 @@ pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Op
           };
         // Update icon url
         mut_data.weather[0].icon = String::from(format!("https://openweathermap.org/img/wn/{}.png", mut_data.weather[0].icon));
-        new_cache.insert(resolved_location_cache.clone(), mut_data.clone());
+        new_cache.insert(set_cache_key.clone(), mut_data.clone());
         app_cache.wod = Some(
           new_cache.clone()
         );
