@@ -32,9 +32,9 @@ impl AppCache {
     }
   }
   
-  pub fn wod_exists(&self, location: String) -> bool {
-    let exists = !self.wod.is_none() && !self.wod.as_ref().unwrap().get(&location).is_none();
-    println!("\nWOD cache for lookup {} is {}", location, if exists { "full"  } else { "empty" });
+  pub fn wod_exists(&self, key: String) -> bool {
+    let exists = !self.wod.is_none() && !self.wod.as_ref().unwrap().get(&key).is_none();
+    println!("\nWOD cache for lookup {} is {}", key, if exists { "full"  } else { "empty" });
     match exists {
       true => {
         match self.wod_dt {
@@ -45,9 +45,9 @@ impl AppCache {
       false => exists
     }
   }
-  pub fn nod_exists(&self, country: String) -> bool {
-    let exists = !self.nod.is_none() && !self.nod.as_ref().unwrap().get(&country).is_none();
-    println!("\nNOD cache for lookup {} is {}", country, if exists { "full"  } else { "empty" });
+  pub fn nod_exists(&self, key: String) -> bool {
+    let exists = !self.nod.is_none() && !self.nod.as_ref().unwrap().get(&key).is_none();
+    println!("\nNOD cache for lookup {} is {}", key, if exists { "full"  } else { "empty" });
     match exists {
       true => {
         match self.nod_dt {
