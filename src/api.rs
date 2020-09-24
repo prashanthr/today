@@ -77,10 +77,9 @@ pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Op
     None => String::from("metric"),
     Some(u) => u.to_string()
   };
-  let cache_key = resolved_location.clone() + &unit.clone();
+  let cache_key = util::hash::compute_hash(resolved_location.clone() + &unit.clone());
   let get_cache_key = cache_key.clone();
   let set_cache_key = cache_key.clone();
-  //let resolved_location_cache = cache_key.clone();
   let base_url: &str = "https://api.openweathermap.org/data/2.5/weather";
   let api_key: String = util::environment::get_env("TODAY_WEATHER_API_KEY", None);
   let wod_url: &str = &(base_url.to_owned() + "?q=" + &resolved_location.to_owned() + "&units=" + &unit.to_owned() + "&APPID=" + &api_key.to_owned());
@@ -132,14 +131,16 @@ pub async fn get_nod(data: web::Data<Mutex<AppCache>>, params: NODRequest) -> Op
     None => String::from("us"),
     Some(country) => country.to_string(),
   };
-  let resolved_country_code_cache = resolved_country_code.clone();
+  let cache_key = util::hash::compute_hash(resolved_country_code.clone());
+  let get_cache_key = cache_key.clone();
+  let set_cache_key = cache_key.clone();
   let api_key: String = util::environment::get_env("TODAY_NEWS_API_KEY", None);
   let nod_url: &str = &(base_url.to_owned() + "?country=" + &resolved_country_code.to_owned() + "&pageSize=100" + "&apiKey=" + &api_key.to_owned());
   
-  let result = if app_cache.nod_exists(resolved_country_code) {
+  let result = if app_cache.nod_exists(cache_key) {
     Some(
       app_cache.nod
-      .as_ref().unwrap().get(&resolved_country_code_cache)
+      .as_ref().unwrap().get(&get_cache_key)
       .unwrap().clone()
     )
   } else {
@@ -151,7 +152,7 @@ pub async fn get_nod(data: web::Data<Mutex<AppCache>>, params: NODRequest) -> Op
           } else {
             HashMap::new()
           };
-          new_cache.insert(resolved_country_code_cache.clone(), data.clone());
+          new_cache.insert(set_cache_key, data.clone());
           app_cache.nod = Some(
             new_cache.clone()
           );
