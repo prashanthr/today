@@ -128,8 +128,8 @@ pub async fn get_nod(data: web::Data<Mutex<AppCache>>, params: NODRequest) -> Op
   let mut app_cache = data.lock().unwrap();
   let base_url: &str = "http://newsapi.org/v2/top-headlines";
   let resolved_country_code: String = match &params.country {
-    None => String::from("us"),
-    Some(country) => country.to_string(),
+    None => util::country::get_country_code("America"),
+    Some(country) => util::country::get_country_code(country),
   };
   let cache_key = util::hash::compute_hash(resolved_country_code.clone());
   let get_cache_key = cache_key.clone();
