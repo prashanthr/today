@@ -10,8 +10,8 @@ use types::AppCache;
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let app_name: String = String::from("today");
-    let host: String = util::environment::get_env("TODAY_API_HOST", Some("127.0.0.1"));
-    let port: String =  util::environment::get_env("TODAY_API_PORT", Some("8088"));
+    let host: String = util::environment::get_env("TODAY_API_HOST", Some("0.0.0.0"));
+    let port: String =  util::environment::get_env("TODAY_API_PORT", Some("9000"));
 
     // AppCache shared data
     let app_data = web::Data::new(
