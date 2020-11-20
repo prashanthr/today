@@ -1,4 +1,5 @@
 use actix_web::{web, App, HttpServer};
+use actix_cors::Cors;
 use std::sync::Mutex;
 
 mod api;
@@ -32,8 +33,12 @@ async fn main() -> std::io::Result<()> {
     println!("Running {} server at {}:{}", app_name, host, port);
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allowed_methods(vec!["GET"])
+            .max_age(3600);
         App::new()
             .app_data(app_data.clone())
+            .wrap(cors)
             .route("/", web::get().to(api::health))
             .route("/health", web::get().to(api::health))
             .route("/debug", web::get().to(api::debug))
