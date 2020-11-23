@@ -98,7 +98,7 @@ pub struct Contents {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct QOD {
-  pub contents: Contents,
+  pub contents: Option<Contents>,
 }
 
 /* Weather of day */
@@ -111,48 +111,48 @@ pub struct WODRequest {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Weather {
-  pub main: String,
-  pub description: String,
-  pub icon: String
+  pub main: Option<String>,
+  pub description: Option<String>,
+  pub icon: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WeatherMain {
-  pub temp: f32,
-  pub feels_like: f32,
-  pub temp_min: f32,
-  pub temp_max: f32,
-  pub pressure: f32,
-  pub humidity: f32,
+  pub temp: Option<f32>,
+  pub feels_like: Option<f32>,
+  pub temp_min: Option<f32>,
+  pub temp_max: Option<f32>,
+  pub pressure: Option<f32>,
+  pub humidity: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WeatherWind {
-  pub speed: f32,
-  pub deg: f32,
+  pub speed: Option<f32>,
+  pub deg: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WeatherClouds {
-  pub all: f32,
+  pub all: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WeatherSys {
-  pub country: String,
-  pub sunrise: i64,
-  pub sunset: i64,
+  pub country: Option<String>,
+  pub sunrise: Option<i64>,
+  pub sunset: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WOD {
-  pub weather: Vec<Weather>,
-  pub main: WeatherMain,
-  pub visibility: f32,
-  pub wind: WeatherWind,
-  pub clouds: WeatherClouds,
-  pub sys: WeatherSys,
-  pub name: String,
+  pub weather: Option<Vec<Weather>>,
+  pub main: Option<WeatherMain>,
+  pub visibility: Option<f32>,
+  pub wind: Option<WeatherWind>,
+  pub clouds: Option<WeatherClouds>,
+  pub sys: Option<WeatherSys>,
+  pub name: Option<String>,
 }
 
 /* News of day */
