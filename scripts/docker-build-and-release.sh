@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 if [ -z $CONTAINER_NAME ]; then 
-  CONTAINER_NAME="today-app"
+  CONTAINER_NAME="today"
 fi
 
 if [ -z $TAG_NAME ]; then 
