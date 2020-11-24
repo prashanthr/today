@@ -37,9 +37,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()
-            .allowed_methods(vec!["GET"])
-            .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
-            .allowed_header(http::header::CONTENT_TYPE)
+            .send_wildcard()
             .supports_credentials()
             .max_age(3600);
         App::new()
