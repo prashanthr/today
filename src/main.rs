@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer, http, middleware::Logger};
+use actix_web::{web, App, HttpServer, middleware::Logger};
 use actix_cors::Cors;
 use env_logger::Env;
 use std::sync::Mutex;
@@ -37,10 +37,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin()
-            .allowed_methods(vec!["GET"])
-            .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
-            .allowed_header(http::header::CONTENT_TYPE)
-            .supports_credentials()
+            .send_wildcard()
             .max_age(3600);
         App::new()
             .app_data(app_data.clone())
