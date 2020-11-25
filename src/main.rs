@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer, http, middleware::Logger};
+use actix_web::{web, App, HttpServer, middleware::Logger};
 use actix_cors::Cors;
 use env_logger::Env;
 use std::sync::Mutex;
