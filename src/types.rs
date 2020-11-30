@@ -98,7 +98,7 @@ pub struct Contents {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct QOD {
-  pub contents: Option<Contents>,
+  pub contents: Contents,
 }
 
 /* Weather of day */

@@ -8,7 +8,7 @@ use serde_json::{Result};
 use crate::util;
 use crate::types::{
   AppCache, 
-  QOD, Quote, Contents
+  QOD, Quote, Contents,
   WODRequest, WOD, 
   NODRequest, NOD, 
   HODRequest, HOD,
@@ -63,8 +63,8 @@ pub async fn get_qod(data: web::Data<Mutex<AppCache>>) -> Option<Vec<Quote>> {
 
     let defaultValue = QOD {
       contents: Contents {
-        quotes: vec![Quote { author: String::from("san francisco,usa"), quote: String::from("san francisco,usa") }]
-      }
+          quotes: vec![Quote { author: String::from("san francisco,usa"), quote: String::from("san francisco,usa") }]
+        }
     };
     match util::http_client::make_request::<QOD>(qod_url, defaultValue).await {
       Ok(data) => {
