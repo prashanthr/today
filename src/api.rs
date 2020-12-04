@@ -7,10 +7,10 @@ use std::collections::HashMap;
 use crate::util;
 use crate::types::{
   AppCache, 
-  QOD, Quote,
-  WODRequest, WOD, 
-  NODRequest, NOD, 
-  HODRequest, HOD,
+  QOD, Quote, get_default_qod,
+  WODRequest, WOD, get_default_wod,
+  NODRequest, NOD, get_default_nod,
+  HODRequest, HOD, get_default_hod,
   TodayRequest, TodayResponse
 };
 
@@ -45,7 +45,7 @@ pub async fn get_qod(data: web::Data<Mutex<AppCache>>) -> Option<Vec<Quote>> {
   if app_cache.qod_exists() {
     app_cache.qod.clone()
   } else {
-    match util::http_client::make_request::<QOD>(qod_url).await {
+    match util::http_client::make_request::<QOD>(qod_url, get_default_qod()).await {
       Ok(data) => {
         app_cache.qod = Some(data.clone().contents.quotes);
         app_cache.qod_dt = Some(util::datetime::now());
@@ -91,7 +91,7 @@ pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Op
         .unwrap().clone()
     )
   } else {
-    match util::http_client::make_request::<WOD>(wod_url).await {
+    match util::http_client::make_request::<WOD>(wod_url, get_default_wod()).await {
       Ok(data) => {
         let mut mut_data = data.clone();
         let mut new_cache: HashMap<String, WOD> = 
@@ -144,7 +144,7 @@ pub async fn get_nod(data: web::Data<Mutex<AppCache>>, params: NODRequest) -> Op
       .unwrap().clone()
     )
   } else {
-      match util::http_client::make_request::<NOD>(nod_url).await {
+      match util::http_client::make_request::<NOD>(nod_url, get_default_nod()).await {
         Ok(data) => {
           let mut new_cache: HashMap<String, NOD> = 
           if !app_cache.nod.as_ref().is_none() {
@@ -194,7 +194,7 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
   let result = if app_cache.hod_exists() {
     app_cache.hod.clone()
   } else {
-    match util::http_client::make_request::<HOD>(qod_url).await {
+    match util::http_client::make_request::<HOD>(qod_url, get_default_hod()).await {
       Ok(data) => {
         app_cache.hod = Some(data.clone());
         app_cache.hod_dt = Some(util::datetime::now());

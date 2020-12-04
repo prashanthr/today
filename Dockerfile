@@ -1,7 +1,7 @@
 FROM rust:latest AS build
 # Labels & metadata
 LABEL version="latest"
-LABEL name="today-app"
+LABEL name="today"
 LABEL description="image for the today app"
 LABEL maintainer="Prashanth R <https://github.com/prashanthr>"
 # Set env

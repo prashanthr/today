@@ -6,7 +6,7 @@ use serde_json::{Result};
 /*
  Makes a HTTP GET request
 */
-pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str) -> Result<T> {
+pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str, default_value: T) -> Result<T> {
   let mut headers = header::HeaderMap::new();
   headers.insert(header::ACCEPT, header::HeaderValue::from_static("application/json"));
   let client = ClientBuilder::new()
@@ -25,11 +25,15 @@ pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str) -> Re
       Ok(data) =>  {
         match data.status().is_success() {
           true => Ok(data.json::<T>().await.unwrap()),
-          false => panic!("Received non OK response")
+          false => {
+            eprintln!("Received non OK response: {:?}", data);
+            serde_json::Result::Ok(default_value)
+          }
         }    
       },
       Err(err) => {
-        panic!(format!("Error occurred when trying to make request to {}: {}", url, err))
+        eprintln!("Error occurred when trying to make request to {}: {}", url, err);
+        serde_json::Result::Ok(default_value)
       }
   }
 }

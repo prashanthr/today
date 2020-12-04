@@ -3,6 +3,10 @@ use serde::{Deserialize, Serialize};
 use chrono::{DateTime,Duration, Utc};
 use crate::util;
 
+fn get_default_copy() -> String {
+   String::from("Unknown")
+}
+
 /* AppCache */
 
 #[derive(Debug, Clone)]
@@ -101,6 +105,21 @@ pub struct QOD {
   pub contents: Contents,
 }
 
+pub fn get_default_qod() -> QOD {
+  const DEFAULT_QOD_AUTHOR: &str = "Aristole";
+  const DEFAULT_QOD_QUOTE: &str  = "It is during our darkest moments that we must focus to see the light.";
+  QOD {
+    contents: Contents {
+        quotes: vec![
+          Quote { 
+            author: String::from(DEFAULT_QOD_AUTHOR), 
+            quote: String::from(DEFAULT_QOD_QUOTE)
+          }
+        ]
+      }
+  }
+}
+
 /* Weather of day */
 
 #[derive(Deserialize)]
@@ -155,6 +174,40 @@ pub struct WOD {
   pub name: String,
 }
 
+pub fn get_default_wod() -> WOD {
+  WOD {
+    weather: vec![
+      Weather {
+        main: get_default_copy(),
+        description: get_default_copy(),
+        icon: get_default_copy(),
+      }
+    ],
+    main: WeatherMain {
+      temp: 0.0,
+      feels_like: 0.0,
+      temp_min: 0.0,
+      temp_max: 0.0,
+      pressure: 0.0,
+      humidity: 0.0,
+    },
+    visibility: 0.0,
+    wind: WeatherWind {
+      speed: 0.0,
+      deg: 0.0,
+    },
+    clouds: WeatherClouds {
+      all: 0.0
+    },
+    sys: WeatherSys {
+      country: get_default_copy(),
+      sunrise: 0,
+      sunset: 0,
+    },
+    name: get_default_copy(),
+  }
+}
+
 /* News of day */
 
 #[derive(Deserialize)]
@@ -184,6 +237,25 @@ pub struct NewsArticle {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NOD {
   pub articles: Vec<NewsArticle>
+}
+
+pub fn get_default_nod() -> NOD {
+  NOD {
+    articles: vec![
+      NewsArticle {
+        source: NewsArticleSource {
+          id: None,
+          name: None
+        },
+        author: None,
+        title: None,
+        description: None,
+        content: None,
+        url: None,
+        publishedAt: None
+      }
+    ]
+  }
 }
 
 /* History of day */
@@ -219,6 +291,45 @@ pub struct HOD {
   pub date: Option<String>,
   pub url: Option<String>,
   pub data: HODData
+}
+
+pub fn get_default_hod() -> HOD {
+  HOD {
+    date: None,
+    url: None,
+    data: HODData {
+      Events: vec![
+        HODItem {
+          year: None,
+          text: None,
+          links: vec![HODLink {
+            title: None,
+            link: None
+          }]
+        }
+      ], 
+      Births: vec![
+        HODItem {
+          year: None,
+          text: None,
+          links: vec![HODLink {
+            title: None,
+            link: None
+          }]
+        }
+      ],
+      Deaths: vec![
+        HODItem {
+          year: None,
+          text: None,
+          links: vec![HODLink {
+            title: None,
+            link: None
+          }]
+        }
+      ],
+    }
+  }
 }
 
 /* Today Unified API  */
