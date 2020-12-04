@@ -26,13 +26,13 @@ pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (url: &str, defau
         match data.status().is_success() {
           true => Ok(data.json::<T>().await.unwrap()),
           false => {
-            println!("Received non OK response");
+            eprintln!("Received non OK response: {:?}", data);
             serde_json::Result::Ok(default_value)
           }
         }    
       },
       Err(err) => {
-        println!("Error occurred when trying to make request to {}: {}", url, err);
+        eprintln!("Error occurred when trying to make request to {}: {}", url, err);
         serde_json::Result::Ok(default_value)
       }
   }
