@@ -3,15 +3,14 @@ use actix_web::{web, HttpResponse, Responder, http};
 use std::sync::Mutex;
 use http::StatusCode;
 use std::collections::HashMap;
-use serde_json::{Result};
 
 use crate::util;
 use crate::types::{
   AppCache, 
-  QOD, Quote, Contents,
-  WODRequest, WOD, 
-  NODRequest, NOD, 
-  HODRequest, HOD,
+  QOD, Quote, get_default_qod,
+  WODRequest, WOD, get_default_wod,
+  NODRequest, NOD, get_default_nod,
+  HODRequest, HOD, get_default_hod,
   TodayRequest, TodayResponse
 };
 
@@ -46,27 +45,7 @@ pub async fn get_qod(data: web::Data<Mutex<AppCache>>) -> Option<Vec<Quote>> {
   if app_cache.qod_exists() {
     app_cache.qod.clone()
   } else {
-    let data = r#"
-        {
-            "name": "John Doe",
-            "age": 43,
-            "phones": [
-                "+44 1234567",
-                "+44 2345678"
-            ]
-        }"#;
-    // let defaultValueResult: Result<QOD> = serde_json::Result::Ok(QOD {
-    //   contents: Contents {
-    //     quotes: vec![Quote { author: String::from("san francisco,usa"), quote: String::from("san francisco,usa") }]
-    //   }
-    // });
-
-    let defaultValue = QOD {
-      contents: Contents {
-          quotes: vec![Quote { author: String::from("san francisco,usa"), quote: String::from("san francisco,usa") }]
-        }
-    };
-    match util::http_client::make_request::<QOD>(qod_url, defaultValue).await {
+    match util::http_client::make_request::<QOD>(qod_url, get_default_qod()).await {
       Ok(data) => {
         app_cache.qod = Some(data.clone().contents.quotes);
         app_cache.qod_dt = Some(util::datetime::now());
@@ -112,7 +91,7 @@ pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Op
         .unwrap().clone()
     )
   } else {
-    match util::http_client::make_request::<WOD>(wod_url).await {
+    match util::http_client::make_request::<WOD>(wod_url, get_default_wod()).await {
       Ok(data) => {
         let mut mut_data = data.clone();
         let mut new_cache: HashMap<String, WOD> = 
@@ -122,12 +101,7 @@ pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Op
             HashMap::new()
           };
         // Update icon url
-        // match mut_data.weather {
-        //   Some(weather) => {
-        //     mut_data.unwr.weather[0].icon = Some(String::from(format!("https://openweathermap.org/img/wn/{}.png", weather[0].icon)));
-        //   }
-        //   None => {println!()}
-        // }
+        mut_data.weather[0].icon = String::from(format!("https://openweathermap.org/img/wn/{}.png", mut_data.weather[0].icon));
         new_cache.insert(set_cache_key.clone(), mut_data.clone());
         app_cache.wod = Some(
           new_cache.clone()
@@ -170,7 +144,7 @@ pub async fn get_nod(data: web::Data<Mutex<AppCache>>, params: NODRequest) -> Op
       .unwrap().clone()
     )
   } else {
-      match util::http_client::make_request::<NOD>(nod_url).await {
+      match util::http_client::make_request::<NOD>(nod_url, get_default_nod()).await {
         Ok(data) => {
           let mut new_cache: HashMap<String, NOD> = 
           if !app_cache.nod.as_ref().is_none() {
@@ -220,7 +194,7 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
   let result = if app_cache.hod_exists() {
     app_cache.hod.clone()
   } else {
-    match util::http_client::make_request::<HOD>(qod_url).await {
+    match util::http_client::make_request::<HOD>(qod_url, get_default_hod()).await {
       Ok(data) => {
         app_cache.hod = Some(data.clone());
         app_cache.hod_dt = Some(util::datetime::now());
