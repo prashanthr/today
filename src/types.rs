@@ -42,7 +42,7 @@ impl AppCache {
     match exists {
       true => {
         match self.wod_dt {
-          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(3)),
+          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(2)),
           None => exists,
         }
       },
