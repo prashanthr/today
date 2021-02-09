@@ -10,7 +10,7 @@ use crate::types::{
 };
 
 /*
- Makes a HTTP GET request with fallback values so never errors on any result
+ Makes a HTTP GET request with a fallback value so it never errors on any result
 */
 pub async fn make_request_with_fallback<T: for<'de> serde::Deserialize<'de>> (url: &str, default_value: T) -> Result<T> {
   let mut headers = header::HeaderMap::new();
@@ -45,7 +45,7 @@ pub async fn make_request_with_fallback<T: for<'de> serde::Deserialize<'de>> (ur
 }
 
 /*
- Makes a HTTP GET request and gets a result or fails a non 2XX response
+ Makes a HTTP GET request and gets the result or fails a non 2XX response
 */
 
 pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (request: HttpRequestParams) -> GenericResult<T> { // StdResult::Result<T, Box<dyn Error>> { // Box<dyn Error> //reqwest::Error // StdResult::Result<T, serde_json::Error>
@@ -84,7 +84,7 @@ pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (request: HttpReq
 
 
 /*
-  Runs a sequence of requests in parallel and returns after the first successful request or proceeds to the next
+  Runs a set of requests in sequence and returns after the first successful request or proceeds to the next
   It will error out if no request was successful
   References:
   https://stackoverflow.com/questions/50850309/how-do-i-iterate-over-a-vec-of-functions-returning-futures-in-rust
@@ -117,6 +117,7 @@ pub async fn requests_in_sequence<T: for<'de> serde::Deserialize<'de>>(requests:
 
 /*
   Run a sequence of http requests and return the first successful value or a default value
+  It simulates the JS promise.any() feature but in sequence
   References:
   https://blog.yoshuawuyts.com/futures-concurrency/
   https://stackoverflow.com/questions/50850309/how-do-i-iterate-over-a-vec-of-functions-returning-futures-in-rust
