@@ -240,40 +240,6 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
     app_cache.hod = Some(live_result.clone());
     app_cache.hod_dt = Some(util::datetime::now());
     Some(live_result)
-
-    // let mut result: HOD = get_default_hod();
-    //   async {
-    //     match util::http_client::requests_in_sequence::<HOD>(
-    //       vec![
-    //         HttpRequest { 
-    //           id: Some("hod-date".to_owned()),
-    //           url: "https://history.muffinlabs.com/date".to_owned(),
-    //           method: HttpVerb::GET,
-    //           query_params: None,
-    //           body: None
-    //         }
-    //       ])
-    //       .await {
-    //         Ok(res) => {
-    //           println!("Successful request with response {:?}", res);
-    //           result = res
-    //         },
-    //         Err(err) => {
-    //           eprintln!("No successful requests in future chain: {}", err);
-    //         }
-    //     }
-    // }.await;
-    // Some(result)
-
-    // match util::http_client::make_request_with_fallback::<HOD>(hod_url, get_default_hod()).await {
-    //   Ok(data) => {
-    //     println!("hoddata ${:?}", data);
-    //     app_cache.hod = Some(data.clone());
-    //     app_cache.hod_dt = Some(util::datetime::now());
-    //     Some(data)
-    //   },
-    //   Err(__err) => None
-    // }
   };
   match result {
     Some(data) => {
