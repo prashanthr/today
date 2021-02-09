@@ -349,3 +349,29 @@ pub struct TodayResponse {
   pub nod: Option<NOD>,
   pub hod: Option<HOD>
 }
+
+pub type GenericError = Box<dyn std::error::Error>;
+pub type GenericResult<T, E = GenericError> = std::result::Result<T, E>;
+
+#[derive(Debug)]
+pub enum HttpVerb {
+  // HEAD,
+  GET,
+  // POST,
+  // PUT,
+  // PATCH,
+  // DELETE
+}
+
+pub struct HttpRequestParams {
+  pub id: Option<String>,
+  pub url: String,
+  pub method: HttpVerb,
+  pub query_params: Option<HashMap<String, String>>,
+  pub body: Option<String>
+}
+
+pub struct RequestSeqWithSuccessFallbackParams<T> {
+  pub requests: Vec<HttpRequestParams>,
+  pub default_value: T
+}
