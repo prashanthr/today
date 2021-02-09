@@ -3,7 +3,6 @@ use actix_web::{web, HttpResponse, Responder, http};
 use std::sync::Mutex;
 use http::StatusCode;
 use std::collections::HashMap;
-
 use crate::util;
 use crate::types::{
   AppCache, 
@@ -11,7 +10,8 @@ use crate::types::{
   WODRequest, WOD, get_default_wod,
   NODRequest, NOD, get_default_nod,
   HODRequest, HOD, get_default_hod,
-  TodayRequest, TodayResponse
+  TodayRequest, TodayResponse,
+  HttpRequestParams, HttpVerb, RequestSeqWithSuccessFallbackParams
 };
 
 /* Route Handlers */
@@ -45,7 +45,7 @@ pub async fn get_qod(data: web::Data<Mutex<AppCache>>) -> Option<Vec<Quote>> {
   if app_cache.qod_exists() {
     app_cache.qod.clone()
   } else {
-    match util::http_client::make_request::<QOD>(qod_url, get_default_qod()).await {
+    match util::http_client::make_request_with_fallback::<QOD>(qod_url, get_default_qod()).await {
       Ok(data) => {
         app_cache.qod = Some(data.clone().contents.quotes);
         app_cache.qod_dt = Some(util::datetime::now());
@@ -64,7 +64,7 @@ pub async fn quote_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
 }
 
 /*
-  Wrather of day
+  Weather of day
 */
 
 pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Option<WOD> {
@@ -91,7 +91,7 @@ pub async fn get_wod(data: web::Data<Mutex<AppCache>>, params: WODRequest) -> Op
         .unwrap().clone()
     )
   } else {
-    match util::http_client::make_request::<WOD>(wod_url, get_default_wod()).await {
+    match util::http_client::make_request_with_fallback::<WOD>(wod_url, get_default_wod()).await {
       Ok(data) => {
         let mut mut_data = data.clone();
         let mut new_cache: HashMap<String, WOD> = 
@@ -144,7 +144,7 @@ pub async fn get_nod(data: web::Data<Mutex<AppCache>>, params: NODRequest) -> Op
       .unwrap().clone()
     )
   } else {
-      match util::http_client::make_request::<NOD>(nod_url, get_default_nod()).await {
+      match util::http_client::make_request_with_fallback::<NOD>(nod_url, get_default_nod()).await {
         Ok(data) => {
           let mut new_cache: HashMap<String, NOD> = 
           if !app_cache.nod.as_ref().is_none() {
@@ -190,18 +190,56 @@ pub async fn news_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<NODR
 
 pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> Option<HOD> {
   let mut app_cache = data.lock().unwrap();
-  let qod_url: &str = "https://history.muffinlabs.com/date";
   let result = if app_cache.hod_exists() {
     app_cache.hod.clone()
   } else {
-    match util::http_client::make_request::<HOD>(qod_url, get_default_hod()).await {
-      Ok(data) => {
-        app_cache.hod = Some(data.clone());
-        app_cache.hod_dt = Some(util::datetime::now());
-        Some(data)
-      },
-      Err(__err) => None
-    }
+    let live_result = util::http_client::requests_seq_with_success_or_fallback::<HOD>(
+        RequestSeqWithSuccessFallbackParams {
+          requests: vec![
+            HttpRequestParams { 
+              id: Some("secure-hod-date".to_owned()),
+              url: "https://history.muffinlabs.com/date".to_owned(),
+              method: HttpVerb::GET,
+              query_params: None,
+              body: None
+            },
+            HttpRequestParams { 
+              id: Some("secure-hod-date-month-day".to_owned()),
+              url: format!(
+                "https://history.muffinlabs.com/date/{}/{}",
+                util::datetime::get_current_month(), 
+                util::datetime::get_current_day()
+              ).to_owned(),
+              method: HttpVerb::GET,
+              query_params: None,
+              body: None
+            },
+            HttpRequestParams { 
+              id: Some("insecure-hod-date".to_owned()),
+              url: "http://history.muffinlabs.com/date".to_owned(),
+              method: HttpVerb::GET,
+              query_params: None,
+              body: None
+            },
+            HttpRequestParams { 
+              id: Some("insecure-hod-date-month-day".to_owned()),
+              url: format!(
+                "http://history.muffinlabs.com/date/{}/{}",
+                util::datetime::get_current_month(), 
+                util::datetime::get_current_day()
+              ).to_owned(),
+              method: HttpVerb::GET,
+              query_params: None,
+              body: None
+            }
+          ],
+          default_value: get_default_hod()
+        }
+      ).await;
+    
+    app_cache.hod = Some(live_result.clone());
+    app_cache.hod_dt = Some(util::datetime::now());
+    Some(live_result)
   };
   match result {
     Some(data) => {
