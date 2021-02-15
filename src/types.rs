@@ -15,10 +15,12 @@ pub struct AppCache {
   pub wod: Option<HashMap<String, WOD>>, // "san francisco,ca" -> ...
   pub nod: Option<HashMap<String, NOD>>, // "country" -> ...
   pub hod: Option<HOD>,
+  pub sod: Option<SOD>,
   pub qod_dt: Option<DateTime<Utc>>,
   pub wod_dt: Option<DateTime<Utc>>,
   pub nod_dt: Option<DateTime<Utc>>,
-  pub hod_dt: Option<DateTime<Utc>>
+  pub hod_dt: Option<DateTime<Utc>>,
+  pub sod_dt: Option<DateTime<Utc>>
 }
 
 impl AppCache {
@@ -77,12 +79,27 @@ impl AppCache {
     }
   }
 
+  pub fn sod_exists(&self) -> bool {
+    let exists = !self.sod.is_none();
+    println!("\nSOD cache is {}", if exists { "full"  } else { "empty" });
+    match exists {
+      true => {
+        match self.sod_dt {
+          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(6)),
+          None => exists,
+        }
+      },
+      false => exists
+    }
+  }
+
   pub fn print(&self) {
     println!("\n-----AppCache data-----");
     println!("QOD: {:?} {:?}", self.qod, self.qod_dt);
     println!("WOD: {:?} {:?}", self.wod, self.wod_dt);
     println!("NOD: {:?} {:?}", self.nod, self.nod_dt);
     println!("HOD: {:?} {:?}", self.hod, self.hod_dt);
+    println!("SOD: {:?} {:?}", self.sod, self.sod_dt);
     println!("-----------------\n");
   }
 }
@@ -332,6 +349,40 @@ pub fn get_default_hod() -> HOD {
   }
 }
 
+/* Song of the day API */
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SOD {
+  pub artist_name: String,
+  pub track_name: String,
+  pub uri: String,
+  pub source: Option<String>
+}
+
+// impl From<String> for SOD {
+//   fn from(item: String) -> Self {
+//       SOD {
+
+//       }
+//   }
+// }
+
+pub fn get_default_sod() -> SOD {
+  SOD {
+    artist_name: "The Weeknd".to_string(),
+    track_name: "Blinding Lights".to_string(),
+    uri: "https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b".to_string(),
+    source: None
+  }
+}
+
+pub struct SOD_CSV {
+  position: u64,
+  track_name: String,
+  artist: String,
+  num_streams: u64,
+  url: String
+}
+
 /* Today Unified API  */
 #[derive(Deserialize)]
 pub struct TodayRequest {
@@ -363,10 +414,18 @@ pub enum HttpVerb {
   // DELETE
 }
 
+#[derive(Debug)]
+pub enum HttpResponseType {
+  JSON,
+  TEXT,
+  CSV
+}
+
 pub struct HttpRequestParams {
   pub id: Option<String>,
   pub url: String,
   pub method: HttpVerb,
+  pub response_type: HttpResponseType,
   pub query_params: Option<HashMap<String, String>>,
   pub body: Option<String>
 }

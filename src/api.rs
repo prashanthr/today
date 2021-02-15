@@ -10,8 +10,9 @@ use crate::types::{
   WODRequest, WOD, get_default_wod,
   NODRequest, NOD, get_default_nod,
   HODRequest, HOD, get_default_hod,
+  SOD, get_default_sod,
   TodayRequest, TodayResponse,
-  HttpRequestParams, HttpVerb, RequestSeqWithSuccessFallbackParams
+  HttpRequestParams, HttpVerb, HttpResponseType, RequestSeqWithSuccessFallbackParams
 };
 
 /* Route Handlers */
@@ -200,6 +201,7 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
               id: Some("secure-hod-date".to_owned()),
               url: "https://history.muffinlabs.com/date".to_owned(),
               method: HttpVerb::GET,
+              response_type: HttpResponseType::JSON,
               query_params: None,
               body: None
             },
@@ -211,6 +213,7 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
                 util::datetime::get_current_day()
               ).to_owned(),
               method: HttpVerb::GET,
+              response_type: HttpResponseType::JSON,
               query_params: None,
               body: None
             },
@@ -218,6 +221,7 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
               id: Some("insecure-hod-date".to_owned()),
               url: "http://history.muffinlabs.com/date".to_owned(),
               method: HttpVerb::GET,
+              response_type: HttpResponseType::JSON,
               query_params: None,
               body: None
             },
@@ -229,6 +233,7 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
                 util::datetime::get_current_day()
               ).to_owned(),
               method: HttpVerb::GET,
+              response_type: HttpResponseType::JSON,
               query_params: None,
               body: None
             }
@@ -260,6 +265,45 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
 
 pub async fn history_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<HODRequest>) -> impl Responder {
   match get_hod(data, HODRequest { limit: info.limit.to_owned() }).await {
+    Some(result) => HttpResponse::Ok().json(result),
+    None => HttpResponse::new(StatusCode::from_u16(500).unwrap())
+  }
+}
+
+/* Song of the day */
+pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
+  let mut app_cache = data.lock().unwrap();
+  let sod_url: &str = "https://spotifycharts.com/regional/global/daily/latest/download";
+  if app_cache.sod_exists() {
+    app_cache.sod.clone()
+  } else {
+    match util::http_client::make_request::<String>(
+      HttpRequestParams {
+        id: Some("sod".to_string()),
+        url: sod_url.to_string(),
+        method: HttpVerb::GET,
+        response_type: HttpResponseType::CSV,
+        query_params: None,
+        body: None
+      }
+    ).await {
+      Ok(data) => {
+        println!("sod data {:?}", data);
+        Some(get_default_sod())
+        // app_cache.qod = Some(data.clone().contents.quotes);
+        // app_cache.qod_dt = Some(util::datetime::now());
+        // Some(data.contents.quotes)
+      },
+      Err(err) => {
+        eprintln!("error {:?}", err);
+        None
+      }
+    }
+  }
+}
+
+pub async fn song_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
+  match get_sod(data).await {
     Some(result) => HttpResponse::Ok().json(result),
     None => HttpResponse::new(StatusCode::from_u16(500).unwrap())
   }

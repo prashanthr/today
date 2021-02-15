@@ -6,7 +6,8 @@ use serde_json::{Result};
 use crate::types::{
   GenericResult,
   HttpRequestParams,
-  RequestSeqWithSuccessFallbackParams
+  RequestSeqWithSuccessFallbackParams,
+  HttpResponseType
 };
 
 /*
@@ -66,7 +67,22 @@ pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (request: HttpReq
     .await {
       Ok(data) =>  {
         match data.status().is_success() {
-          true => Ok(data.json::<T>().await.unwrap()),
+          true => {
+            println!("data received {:?}",data);
+            match request.response_type {
+              HttpResponseType::CSV => {
+                // let result = data.text().await.unwrap();
+                // Ok(T::deserialize(result))
+                let d = data;
+                println!("data text {:?}", d.text().await.unwrap());
+                Err("bad error")?
+                // Ok(data.json::<T>().await.unwrap())
+              }
+              HttpResponseType::JSON | _ => {
+                Ok(data.json::<T>().await.unwrap())
+              }
+            }
+          },
           false => {
             let err_msg = format!("Received non OK response: {:?}", data);
             eprintln!("{}", err_msg);
