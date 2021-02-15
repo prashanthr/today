@@ -274,6 +274,7 @@ pub async fn history_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<H
 pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
   let mut app_cache = data.lock().unwrap();
   let sod_url: &str = "https://spotifycharts.com/regional/global/daily/latest/download";
+  // let sod_url_2: &str = "https://spotifycharts.com/viral/global/daily/latest/download";
   if app_cache.sod_exists() {
     app_cache.sod.clone()
   } else {
