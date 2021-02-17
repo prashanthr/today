@@ -1,3 +1,4 @@
+extern crate csv;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime,Duration, Utc};
@@ -375,12 +376,32 @@ pub fn get_default_sod() -> SOD {
   }
 }
 
-pub struct SOD_CSV {
-  position: u64,
-  track_name: String,
-  artist: String,
-  num_streams: u64,
-  url: String
+/* Download options here: https://spotifycharts.com/regional */
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SpotifyChartCsvRecord {
+  pub position: Option<String>,
+  pub track_name: Option<String>,
+  pub artist: Option<String>,
+  pub num_streams: Option<String>,
+  pub url: Option<String>
+}
+
+impl From<csv::StringRecord> for SpotifyChartCsvRecord {
+  fn from(record: csv::StringRecord) -> Self {
+    fn transform(data: Option<&str>) -> Option<String> {
+       match data {
+        Some(d) => Some(d.to_owned()),
+        None => None
+      }
+    }
+    SpotifyChartCsvRecord {
+      position: transform(record.get(0)),
+      track_name: transform(record.get(1)),
+      artist: transform(record.get(2)),
+      num_streams: transform(record.get(3)),
+      url: transform(record.get(4))
+    }
+  }
 }
 
 /* Today Unified API  */

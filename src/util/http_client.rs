@@ -1,5 +1,6 @@
 extern crate reqwest;
 extern crate serde_json;
+extern crate csv;
 use reqwest::{header, ClientBuilder};
 use std::time::Duration;
 use serde_json::{Result};
@@ -7,7 +8,8 @@ use crate::types::{
   GenericResult,
   HttpRequestParams,
   RequestSeqWithSuccessFallbackParams,
-  HttpResponseType
+  HttpResponseType,
+  SpotifyChartCsvRecord
 };
 
 /*
@@ -73,8 +75,28 @@ pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (request: HttpReq
               HttpResponseType::CSV => {
                 // let result = data.text().await.unwrap();
                 // Ok(T::deserialize(result))
-                let d = data;
-                println!("data text {:?}", d.text().await.unwrap());
+                // let d = data;
+                let body = data.text().await?;
+                println!("data text {:?}", body);
+                let mut reader = csv::Reader::from_reader(body.as_bytes());
+                // println!("reader deseri {:?}", reader.deserialize());
+                // for result in reader.deserialize::<SOD_CSV>() {
+                //   let record = result?;
+                //   println!("{:?}", record)
+                // }
+
+                for result in reader.records() {
+                  // The iterator yields Result<StringRecord, Error>, so we check the
+                  // error here.
+                  match result {
+                    Ok(record) => {
+                      println!("Original Record{:?}", record);
+                      let de = SpotifyChartCsvRecord::from(record);
+                      println!("Deserialized Record: {:?}", de)
+                    },
+                    Err(err) => println!("Error deserializing record {:?}", err)
+                  }
+                }
                 Err("bad error")?
                 // Ok(data.json::<T>().await.unwrap())
               }
