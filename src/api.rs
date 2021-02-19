@@ -11,7 +11,7 @@ use crate::types::{
   WODRequest, WOD, get_default_wod,
   NODRequest, NOD, get_default_nod,
   HODRequest, HOD, get_default_hod,
-  SOD, get_default_sod, SpotifyChartCsvRecord,
+  SOD, get_default_sod,
   TodayRequest, TodayResponse,
   HttpRequestParams, HttpVerb, 
   RequestSeqWithSuccessFallbackParams
@@ -292,13 +292,8 @@ pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
     ).await {
       Ok(data) => {
         println!("sod data {:?}", data);
-        async fn parse(data: reqwest::Response) -> Option<Vec<SpotifyChartCsvRecord>> {
-          let body = data.text().await.unwrap();
-          println!("data text {:?}", body);
-          Some(util::spotify_csv::map_spotify_data_csv(body))
-        }
-        let parsed = parse(data).await?;
-        println!("Parsed data {:?}", parsed);
+        let records = util::spotify_csv::response_to_records(data).await?;
+        println!("Parsed data {:?}", records);
         // todo : return one random record
         Some(get_default_sod())
         // todo: add to cache
