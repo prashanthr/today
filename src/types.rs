@@ -425,7 +425,7 @@ pub struct TodayResponse {
 pub type GenericError = Box<dyn std::error::Error>;
 pub type GenericResult<T, E = GenericError> = std::result::Result<T, E>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum HttpVerb {
   // HEAD,
   GET,
@@ -435,13 +435,15 @@ pub enum HttpVerb {
   // DELETE
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum HttpResponseType {
   JSON, // application/json
   TEXT, // text/plain
   CSV // text/csv
 }
 
+#[derive(Debug, Clone)]
 pub struct HttpRequestParams {
   pub id: Option<String>,
   pub url: String,
