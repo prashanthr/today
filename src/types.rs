@@ -426,13 +426,14 @@ pub type GenericError = Box<dyn std::error::Error>;
 pub type GenericResult<T, E = GenericError> = std::result::Result<T, E>;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum HttpVerb {
-  // HEAD,
+  HEAD,
   GET,
-  // POST,
-  // PUT,
-  // PATCH,
-  // DELETE
+  POST,
+  PUT,
+  PATCH,
+  DELETE
 }
 
 #[derive(Debug, Clone)]
