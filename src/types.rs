@@ -437,16 +437,16 @@ pub enum HttpVerb {
 
 #[derive(Debug)]
 pub enum HttpResponseType {
-  JSON,
-  TEXT,
-  CSV
+  JSON, // application/json
+  TEXT, // text/plain
+  CSV // text/csv
 }
 
 pub struct HttpRequestParams {
   pub id: Option<String>,
   pub url: String,
   pub method: HttpVerb,
-  pub response_type: HttpResponseType,
+  pub response_type: Option<HttpResponseType>,
   pub query_params: Option<HashMap<String, String>>,
   pub body: Option<String>
 }

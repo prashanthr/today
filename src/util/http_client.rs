@@ -8,8 +8,7 @@ use crate::types::{
   GenericResult,
   HttpRequestParams,
   RequestSeqWithSuccessFallbackParams,
-  HttpResponseType,
-  SpotifyChartCsvRecord
+  HttpResponseType
 };
 
 /*
@@ -51,7 +50,7 @@ pub async fn make_request_with_fallback<T: for<'de> serde::Deserialize<'de>> (ur
  Makes a HTTP GET request and gets the result or fails a non 2XX response
 */
 
-pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (request: HttpRequestParams) -> GenericResult<T> { // StdResult::Result<T, Box<dyn Error>> { // Box<dyn Error> //reqwest::Error // StdResult::Result<T, serde_json::Error>
+pub async fn make_request_raw(request_params: HttpRequestParams) -> GenericResult<reqwest::Response> {
   let mut headers = header::HeaderMap::new();
   headers.insert(header::ACCEPT, header::HeaderValue::from_static("application/json"));
   let client = ClientBuilder::new()
@@ -62,47 +61,52 @@ pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (request: HttpReq
       env!("CARGO_PKG_VERSION")))
     .timeout(Duration::from_secs(10))
     .build().unwrap();
-  println!("Making request to {}", request.url);
+  println!("Making request to {}", request_params.url);
   match client
-    .get(&request.url) // verb switch here
+    .get(&request_params.url) // verb switch here
+    .send()
+    .await {
+      Ok(data) =>  {
+        Ok(data)
+      },
+      Err(err) => {
+        Err("bad")?
+      }
+    }
+}
+
+pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (request_params: HttpRequestParams) -> GenericResult<T> {
+  let mut headers = header::HeaderMap::new();
+  headers.insert(header::ACCEPT, header::HeaderValue::from_static("application/json"));
+  let client = ClientBuilder::new()
+    .default_headers(headers)
+    .user_agent(concat!(
+      env!("CARGO_PKG_NAME"),
+      "/",
+      env!("CARGO_PKG_VERSION")))
+    .timeout(Duration::from_secs(10))
+    .build().unwrap();
+  println!("Making request to {}", request_params.url);
+  match client
+    .get(&request_params.url) // verb switch here
     .send()
     .await {
       Ok(data) =>  {
         match data.status().is_success() {
           true => {
             println!("data received {:?}",data);
-            match request.response_type {
-              HttpResponseType::CSV => {
-                // let result = data.text().await.unwrap();
-                // Ok(T::deserialize(result))
-                // let d = data;
-                let body = data.text().await?;
-                println!("data text {:?}", body);
-                let mut reader = csv::Reader::from_reader(body.as_bytes());
-                // println!("reader deseri {:?}", reader.deserialize());
-                // for result in reader.deserialize::<SOD_CSV>() {
-                //   let record = result?;
-                //   println!("{:?}", record)
-                // }
-
-                for result in reader.records() {
-                  // The iterator yields Result<StringRecord, Error>, so we check the
-                  // error here.
-                  match result {
-                    Ok(record) => {
-                      println!("Original Record{:?}", record);
-                      let de = SpotifyChartCsvRecord::from(record);
-                      println!("Deserialized Record: {:?}", de)
-                    },
-                    Err(err) => println!("Error deserializing record {:?}", err)
+            match request_params.response_type {
+              Some(res_type) => {
+                match res_type {
+                  HttpResponseType::JSON => Ok(data.json::<T>().await.unwrap()),
+                  _ => {
+                    let err_msg = "No handler provided for unsupported response type";
+                    eprintln!("{}", err_msg);
+                    Err(err_msg)?
                   }
                 }
-                Err("bad error")?
-                // Ok(data.json::<T>().await.unwrap())
-              }
-              HttpResponseType::JSON | _ => {
-                Ok(data.json::<T>().await.unwrap())
-              }
+              },
+              None => Ok(data.json::<T>().await.unwrap())
             }
           },
           false => {
@@ -113,7 +117,7 @@ pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (request: HttpReq
         }    
       },
       Err(err) => {
-        let err_msg = format!("Error occurred when trying to make request to {}: {}", request.url, err);
+        let err_msg = format!("Error occurred when trying to make request to {}: {}", request_params.url, err);
         eprintln!("{}", err_msg);
         Err(err_msg)?
       }
