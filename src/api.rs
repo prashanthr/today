@@ -295,7 +295,7 @@ pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
         async fn parse(data: reqwest::Response) -> Option<Vec<SpotifyChartCsvRecord>> {
           let body = data.text().await.unwrap();
           println!("data text {:?}", body);
-          Some(util::csv::map_spotify_data_csv(body))
+          Some(util::spotify_csv::map_spotify_data_csv(body))
         }
         let parsed = parse(data).await?;
         println!("Parsed data {:?}", parsed);
