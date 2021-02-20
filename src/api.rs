@@ -295,6 +295,8 @@ pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
         let records = util::spotify_csv::response_to_records(data).await?;
         println!("Parsed data {:?}", records);
         // todo : return one random record
+        let chosen_song = util::vector::get_random(&records);
+        println!("chosen_song {:?}", chosen_song);
         Some(get_default_sod())
         // todo: add to cache
         // app_cache.qod = Some(data.clone().contents.quotes);

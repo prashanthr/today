@@ -24,7 +24,15 @@ fn map_csv_str_to_records(data: String) -> Vec<SpotifyChartCsvRecord> {
 }
 
 pub async fn response_to_records(data: reqwest::Response) -> Option<Vec<SpotifyChartCsvRecord>> {
-  let body = data.text().await.unwrap();
-  println!("data text {:?}", body);
-  Some(map_csv_str_to_records(body))
+  match data.text().await {
+    Ok(data) =>  {
+      println!("Success converting http text/csv data to str");
+      println!("Data: {:?}", data);
+      Some(map_csv_str_to_records(data))
+    },
+    Err(err) => {
+      eprintln!("Error: Error converting http text/csv to string {}", err);
+      None
+    }
+  }  
 }

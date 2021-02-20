@@ -377,7 +377,7 @@ pub fn get_default_sod() -> SOD {
 }
 
 /* Download options here: https://spotifycharts.com/regional */
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SpotifyChartCsvRecord {
   pub position: Option<String>,
   pub track_name: Option<String>,
