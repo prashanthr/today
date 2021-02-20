@@ -15,10 +15,7 @@ pub fn get_slice<T: Clone>(data: Vec<T>, start: usize, end: usize) -> Vec<T> {
 pub fn get_random<T: Clone + std::fmt::Debug>(data: &Vec<T>) -> Option<&T> {
   let chosen_one = data.choose(&mut rand::thread_rng());
   match chosen_one {
-    Some(el) => {
-      // println!("Random element: {:?} - {:?}", chosen_one, *el);
-      Some(el)
-    },
+    Some(el) => Some(el),
     None => None
   }
 }
