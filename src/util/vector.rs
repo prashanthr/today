@@ -1,4 +1,4 @@
-use rand::seq::SliceRandom;
+use rand::Rng;
 
 pub fn get_slice<T: Clone>(data: Vec<T>, start: usize, end: usize) -> Vec<T> {
   let max_len = data.len();
@@ -6,16 +6,6 @@ pub fn get_slice<T: Clone>(data: Vec<T>, start: usize, end: usize) -> Vec<T> {
   data[start..slice_end].to_vec()
 }
 
-/*
-  Get a random element from a list of items
-  Usage:
-  let items = vec![1,2,3];
-  let random_el = get_random(&items);
-*/
-pub fn get_random<T: Clone + std::fmt::Debug>(data: &Vec<T>) -> Option<&T> {
-  let chosen_one = data.choose(&mut rand::thread_rng());
-  match chosen_one {
-    Some(el) => Some(el),
-    None => None
-  }
+pub fn get_random_in_range(max: usize) -> usize {
+  rand::thread_rng().gen_range(0..max)
 }

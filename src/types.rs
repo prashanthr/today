@@ -353,9 +353,9 @@ pub fn get_default_hod() -> HOD {
 /* Song of the day API */
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SOD {
-  pub artist_name: String,
-  pub track_name: String,
-  pub uri: String,
+  pub artist_name: Option<String>,
+  pub track_name: Option<String>,
+  pub uri: Option<String>,
   pub source: Option<String>
 }
 
@@ -369,9 +369,9 @@ pub struct SOD {
 
 pub fn get_default_sod() -> SOD {
   SOD {
-    artist_name: "The Weeknd".to_string(),
-    track_name: "Blinding Lights".to_string(),
-    uri: "https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b".to_string(),
+    artist_name: Some("The Weeknd".to_string()),
+    track_name: Some("Blinding Lights".to_string()),
+    uri: Some("https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b".to_string()),
     source: None
   }
 }
@@ -379,19 +379,19 @@ pub fn get_default_sod() -> SOD {
 /* Download options here: https://spotifycharts.com/regional */
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SpotifyChartCsvRecord {
-  pub position: Option<String>,
-  pub track_name: Option<String>,
-  pub artist: Option<String>,
-  pub num_streams: Option<String>,
-  pub url: Option<String>
+  pub position: String,
+  pub track_name: String,
+  pub artist: String,
+  pub num_streams: String,
+  pub url: String
 }
 
 impl From<csv::StringRecord> for SpotifyChartCsvRecord {
   fn from(record: csv::StringRecord) -> Self {
-    fn transform(data: Option<&str>) -> Option<String> {
+    fn transform(data: Option<&str>) -> String {
        match data {
-        Some(d) => Some(d.to_owned()),
-        None => None
+        Some(d) => d.to_owned(),
+        None => "".to_owned()
       }
     }
     SpotifyChartCsvRecord {

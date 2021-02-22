@@ -1,6 +1,8 @@
 extern crate csv;
 use crate::types::{
-  SpotifyChartCsvRecord
+  SpotifyChartCsvRecord,
+  SOD,
+  get_default_sod
 };
 
 fn map_csv_str_to_records(data: String) -> Vec<SpotifyChartCsvRecord> {
@@ -9,13 +11,11 @@ fn map_csv_str_to_records(data: String) -> Vec<SpotifyChartCsvRecord> {
     .records()
     .map(|record| match record {
     Ok(record) => {
-      println!("Original Record{:?}", record);
       let deserialized = SpotifyChartCsvRecord::from(record);
-      println!("Deserialized Record: {:?}", deserialized);
       Some(deserialized)
     },
     Err(err) => {
-      println!("Error deserializing record {:?}", err);
+      println!("Error: Error deserializing record {:?}", err);
       None
     }
   })
@@ -27,7 +27,6 @@ pub async fn response_to_records(data: reqwest::Response) -> Option<Vec<SpotifyC
   match data.text().await {
     Ok(data) =>  {
       println!("Success converting http text/csv data to str");
-      println!("Data: {:?}", data);
       Some(map_csv_str_to_records(data))
     },
     Err(err) => {
@@ -35,4 +34,44 @@ pub async fn response_to_records(data: reqwest::Response) -> Option<Vec<SpotifyC
       None
     }
   }  
+}
+
+pub fn record_to_sod(record: Option<&SpotifyChartCsvRecord>) -> SOD {
+  match record {
+    Some(rec) => {
+      let url = rec.clone().url;
+      fn transform(data: String) -> Option<String> {
+        match data.is_empty() {
+          true => None,
+          false => Some(data)
+        }
+      }
+      SOD {
+        artist_name: transform(rec.artist.to_string()),
+        track_name: transform(rec.track_name.to_string()),
+        uri: transform(rec.url.to_string()),
+        source: get_source_from_uri(transform(url))
+      }
+    },
+    None => {
+      get_default_sod()
+    }
+  }
+}
+
+pub fn get_source_from_uri(uri: Option<String>) -> Option<String> {
+  match uri {
+    Some(u) => {
+      let spotify_uri = "open.spotify.com".to_owned();
+      let youtube_uri = "youtube.com".to_owned();
+      if u.contains(&spotify_uri) {
+        Some("spotify".to_owned())
+      } else if u.contains(&youtube_uri) {
+        Some("youtube".to_owned())
+      } else {
+        None
+      }
+    },
+    None => None
+  }
 }

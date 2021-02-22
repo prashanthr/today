@@ -11,7 +11,7 @@ use crate::types::{
   WODRequest, WOD, get_default_wod,
   NODRequest, NOD, get_default_nod,
   HODRequest, HOD, get_default_hod,
-  SOD, get_default_sod,
+  SOD,
   TodayRequest, TodayResponse,
   HttpRequestParams, HttpVerb, 
   RequestSeqWithSuccessFallbackParams
@@ -275,8 +275,11 @@ pub async fn history_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<H
 /* Song of the day */
 pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
   let mut app_cache = data.lock().unwrap();
-  let sod_url: &str = "https://spotifycharts.com/regional/global/daily/latest/download";
-  // let sod_url_2: &str = "https://spotifycharts.com/viral/global/daily/latest/download";
+  let sod_urls = vec![
+    "https://spotifycharts.com/regional/global/daily/latest/download",
+    "https://spotifycharts.com/viral/global/daily/latest/download"
+  ];
+  let sod_url = sod_urls[util::vector::get_random_in_range(sod_urls.len())];
   if app_cache.sod_exists() {
     app_cache.sod.clone()
   } else {
@@ -291,17 +294,17 @@ pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
       }
     ).await {
       Ok(data) => {
-        println!("sod data {:?}", data);
         let records = util::spotify_csv::response_to_records(data).await?;
-        println!("Parsed data {:?}", records);
-        // todo : return one random record
-        let chosen_song = util::vector::get_random(&records);
-        println!("chosen_song {:?}", chosen_song);
-        Some(get_default_sod())
-        // todo: add to cache
-        // app_cache.qod = Some(data.clone().contents.quotes);
-        // app_cache.qod_dt = Some(util::datetime::now());
-        // Some(data.contents.quotes)
+        println!("Successfully parsed {} record(s)",records.len());
+        let random_ptr = util::vector::get_random_in_range(records.len());
+        println!("Picking record# {}", random_ptr);
+        let chosen_song = &records[
+          random_ptr
+        ];
+        let result = util::spotify_csv::record_to_sod(Some(chosen_song));
+        app_cache.sod = Some(result.clone());
+        app_cache.sod_dt = Some(util::datetime::now());
+        Some(result)
       },
       Err(err) => {
         eprintln!("error {:?}", err);
