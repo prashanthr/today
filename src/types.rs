@@ -387,9 +387,9 @@ impl From<csv::StringRecord> for SpotifyChartCsvRecord {
     }
     let record_type = {
       if record.len() > 4 {
-        SpotifyChartsApiType::REGIONAL
+        SpotifyChartsDataType::REGIONAL
       } else {
-        SpotifyChartsApiType::VIRAL
+        SpotifyChartsDataType::VIRAL
       }
     };
 
@@ -399,19 +399,19 @@ impl From<csv::StringRecord> for SpotifyChartCsvRecord {
       track_name: transform(record.get(1)),
       artist: transform(record.get(2)),
       num_streams: match record_type {
-        SpotifyChartsApiType::REGIONAL => transform(record.get(3)),
-        SpotifyChartsApiType::VIRAL => "".to_string(),
+        SpotifyChartsDataType::REGIONAL => transform(record.get(3)),
+        SpotifyChartsDataType::VIRAL => "".to_string(),
       },
       url: match record_type {
-        SpotifyChartsApiType::REGIONAL => transform(record.get(4)),
-        SpotifyChartsApiType::VIRAL => transform(record.get(3)),
+        SpotifyChartsDataType::REGIONAL => transform(record.get(4)),
+        SpotifyChartsDataType::VIRAL => transform(record.get(3)),
       }
     }
   }
 }
 
 #[derive(Deserialize, Copy, Clone, Debug)]
-pub enum SpotifyChartsApiType {
+pub enum SpotifyChartsDataType {
   REGIONAL,
   VIRAL
 }
