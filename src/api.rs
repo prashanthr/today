@@ -1,5 +1,4 @@
 
-extern crate reqwest;
 use actix_web::{web, HttpResponse, Responder, http};
 use std::sync::Mutex;
 use http::StatusCode;
@@ -276,7 +275,7 @@ pub async fn history_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<H
 pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
   let mut app_cache = data.lock().unwrap();
   let sod_sources = vec![
-    ("https://spotifycharts.com/regional/global/daily/latest/download", "spotify-egional"),
+    ("https://spotifycharts.com/regional/global/daily/latest/download", "spotify-regional"),
     ("https://spotifycharts.com/viral/global/daily/latest/download", "spotify-global"),
     // ("https://itunes.apple.com/us/rss/topsongs/limit=200/json", "itunes-topsongs")
   ];
