@@ -277,10 +277,10 @@ pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
   let mut app_cache = data.lock().unwrap();
   let sod_urls = vec![
     "https://spotifycharts.com/regional/global/daily/latest/download",
-    "https://spotifycharts.com/viral/global/daily/latest/download"
+    // "https://spotifycharts.com/viral/global/daily/latest/download"
   ];
   let sod_url = sod_urls[util::vector::get_random_in_range(sod_urls.len())];
-  if app_cache.sod_exists() {
+  let records = if app_cache.sod_exists() {
     app_cache.sod.clone()
   } else {
     match util::http_client::make_request_raw(
@@ -295,22 +295,25 @@ pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
     ).await {
       Ok(data) => {
         let records = util::spotify_csv::response_to_records(data).await?;
-        println!("Successfully parsed {} record(s)",records.len());
-        let random_ptr = util::vector::get_random_in_range(records.len());
-        println!("Picking record# {}", random_ptr);
-        let chosen_song = &records[
-          random_ptr
-        ];
-        let result = util::spotify_csv::record_to_sod(Some(chosen_song));
-        app_cache.sod = Some(result.clone());
+        println!("Successfully parsed {} record(s)", records.len());
+        app_cache.sod = Some(records.clone());
         app_cache.sod_dt = Some(util::datetime::now());
-        Some(result)
+        Some(records)
       },
-      Err(err) => {
-        eprintln!("error {:?}", err);
-        None
-      }
+      Err(_err) => None
     }
+  };
+  match records {
+    Some(recs) => {
+      let random_ptr = util::vector::get_random_in_range(recs.len());
+      let chosen_song = &recs[
+        random_ptr
+      ];
+      println!("Picking record# {} - {:?}", random_ptr, chosen_song);
+      let result = util::spotify_csv::record_to_sod(Some(chosen_song));
+      Some(result)
+    },
+    None => None
   }
 }
 

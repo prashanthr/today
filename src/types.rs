@@ -16,7 +16,7 @@ pub struct AppCache {
   pub wod: Option<HashMap<String, WOD>>, // "san francisco,ca" -> ...
   pub nod: Option<HashMap<String, NOD>>, // "country" -> ...
   pub hod: Option<HOD>,
-  pub sod: Option<SOD>,
+  pub sod: Option<Vec<SpotifyChartCsvRecord>>,
   pub qod_dt: Option<DateTime<Utc>>,
   pub wod_dt: Option<DateTime<Utc>>,
   pub nod_dt: Option<DateTime<Utc>>,
@@ -86,7 +86,7 @@ impl AppCache {
     match exists {
       true => {
         match self.sod_dt {
-          Some(field_dt) => util::datetime::in_range(field_dt, Duration::hours(6)),
+          Some(field_dt) => util::datetime::in_range(field_dt, Duration::days(1)),
           None => exists,
         }
       },
