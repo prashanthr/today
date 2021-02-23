@@ -394,14 +394,33 @@ impl From<csv::StringRecord> for SpotifyChartCsvRecord {
         None => "".to_owned()
       }
     }
+    let record_type = {
+      if record.len() > 4 {
+        SpotifyChartsApiType::REGIONAL
+      } else {
+        SpotifyChartsApiType::VIRAL
+      }
+    };
     SpotifyChartCsvRecord {
       position: transform(record.get(0)),
       track_name: transform(record.get(1)),
       artist: transform(record.get(2)),
-      num_streams: transform(record.get(3)),
-      url: transform(record.get(4))
+      num_streams: match record_type {
+        SpotifyChartsApiType::REGIONAL => transform(record.get(3)),
+        SpotifyChartsApiType::VIRAL => "".to_string(),
+      },
+      url: match record_type {
+        SpotifyChartsApiType::REGIONAL => transform(record.get(4)),
+        SpotifyChartsApiType::VIRAL => transform(record.get(3)),
+      }
     }
   }
+}
+
+#[derive(Deserialize, Copy, Clone, Debug)]
+pub enum SpotifyChartsApiType {
+  REGIONAL,
+  VIRAL
 }
 
 /* Today Unified API  */

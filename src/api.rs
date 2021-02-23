@@ -275,17 +275,17 @@ pub async fn history_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<H
 /* Song of the day */
 pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
   let mut app_cache = data.lock().unwrap();
-  let sod_urls = vec![
-    "https://spotifycharts.com/regional/global/daily/latest/download",
-    // "https://spotifycharts.com/viral/global/daily/latest/download"
+  let sod_sources = vec![
+    ("https://spotifycharts.com/regional/global/daily/latest/download", "sod-regional"),
+    ("https://spotifycharts.com/viral/global/daily/latest/download", "sod-global")
   ];
-  let sod_url = sod_urls[util::vector::get_random_in_range(sod_urls.len())];
+  let (sod_url, sod_source) = sod_sources[util::vector::get_random_in_range(sod_sources.len())];
   let records = if app_cache.sod_exists() {
     app_cache.sod.clone()
   } else {
     match util::http_client::make_request_raw(
       HttpRequestParams {
-        id: Some("sod".to_string()),
+        id: Some(sod_source.to_string()),
         url: sod_url.to_string(),
         method: HttpVerb::GET,
         response_type: None,
