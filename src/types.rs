@@ -393,6 +393,8 @@ impl From<csv::StringRecord> for SpotifyChartCsvRecord {
         SpotifyChartsApiType::VIRAL
       }
     };
+
+    // See the download formats at https://spotifycharts.com/
     SpotifyChartCsvRecord {
       position: transform(record.get(0)),
       track_name: transform(record.get(1)),
