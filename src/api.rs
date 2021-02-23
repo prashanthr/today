@@ -330,12 +330,14 @@ pub async fn today(data: web::Data<Mutex<AppCache>>, info: web::Query<TodayReque
   let wod = get_wod(data.clone(), WODRequest { location: info.location.to_owned(), unit: info.wod_unit.to_owned() }).await;
   let nod = get_nod(data.clone(), NODRequest { country: info.country.to_owned(), limit: info.nod_limit.to_owned() }).await;
   let hod = get_hod(data.clone(), HODRequest { limit: info.hod_limit.to_owned() }).await;
+  let sod = get_sod(data.clone()).await;
   HttpResponse::Ok().json::<TodayResponse>(
     TodayResponse { 
       qod,
       wod,
       nod,
-      hod
+      hod,
+      sod
     }
   )
 }

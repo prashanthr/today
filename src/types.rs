@@ -438,7 +438,8 @@ pub struct TodayResponse {
   pub qod: Option<Vec<Quote>>,
   pub wod: Option<WOD>,
   pub nod: Option<NOD>,
-  pub hod: Option<HOD>
+  pub hod: Option<HOD>,
+  pub sod: Option<SOD>
 }
 
 pub type GenericError = Box<dyn std::error::Error>;
