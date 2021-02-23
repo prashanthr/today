@@ -359,14 +359,6 @@ pub struct SOD {
   pub source: Option<String>
 }
 
-// impl From<String> for SOD {
-//   fn from(item: String) -> Self {
-//       SOD {
-
-//       }
-//   }
-// }
-
 pub fn get_default_sod() -> SOD {
   SOD {
     artist_name: Some("The Weeknd".to_string()),
