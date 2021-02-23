@@ -1,3 +1,4 @@
+extern crate csv;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime,Duration, Utc};
@@ -15,10 +16,12 @@ pub struct AppCache {
   pub wod: Option<HashMap<String, WOD>>, // "san francisco,ca" -> ...
   pub nod: Option<HashMap<String, NOD>>, // "country" -> ...
   pub hod: Option<HOD>,
+  pub sod: Option<Vec<SpotifyChartCsvRecord>>,
   pub qod_dt: Option<DateTime<Utc>>,
   pub wod_dt: Option<DateTime<Utc>>,
   pub nod_dt: Option<DateTime<Utc>>,
-  pub hod_dt: Option<DateTime<Utc>>
+  pub hod_dt: Option<DateTime<Utc>>,
+  pub sod_dt: Option<DateTime<Utc>>
 }
 
 impl AppCache {
@@ -77,12 +80,27 @@ impl AppCache {
     }
   }
 
+  pub fn sod_exists(&self) -> bool {
+    let exists = !self.sod.is_none();
+    println!("\nSOD cache is {}", if exists { "full"  } else { "empty" });
+    match exists {
+      true => {
+        match self.sod_dt {
+          Some(field_dt) => util::datetime::in_range(field_dt, Duration::days(1)),
+          None => exists,
+        }
+      },
+      false => exists
+    }
+  }
+
   pub fn print(&self) {
     println!("\n-----AppCache data-----");
     println!("QOD: {:?} {:?}", self.qod, self.qod_dt);
     println!("WOD: {:?} {:?}", self.wod, self.wod_dt);
     println!("NOD: {:?} {:?}", self.nod, self.nod_dt);
     println!("HOD: {:?} {:?}", self.hod, self.hod_dt);
+    println!("SOD: {:?} {:?}", self.sod, self.sod_dt);
     println!("-----------------\n");
   }
 }
@@ -332,6 +350,72 @@ pub fn get_default_hod() -> HOD {
   }
 }
 
+/* Song of the day API */
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SOD {
+  pub artist_name: Option<String>,
+  pub track_name: Option<String>,
+  pub uri: Option<String>,
+  pub source: Option<String>
+}
+
+pub fn get_default_sod() -> SOD {
+  SOD {
+    artist_name: Some("The Weeknd".to_string()),
+    track_name: Some("Blinding Lights".to_string()),
+    uri: Some("https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b".to_string()),
+    source: None
+  }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SpotifyChartCsvRecord {
+  pub position: String,
+  pub track_name: String,
+  pub artist: String,
+  pub num_streams: String,
+  pub url: String
+}
+
+impl From<csv::StringRecord> for SpotifyChartCsvRecord {
+  fn from(record: csv::StringRecord) -> Self {
+    fn transform(data: Option<&str>) -> String {
+       match data {
+        Some(d) => d.to_owned(),
+        None => "".to_owned()
+      }
+    }
+    let record_type = {
+      if record.len() > 4 {
+        SpotifyChartsDataType::REGIONAL
+      } else {
+        SpotifyChartsDataType::VIRAL
+      }
+    };
+
+    // See the download formats at https://spotifycharts.com/
+    SpotifyChartCsvRecord {
+      position: transform(record.get(0)),
+      track_name: transform(record.get(1)),
+      artist: transform(record.get(2)),
+      num_streams: match record_type {
+        SpotifyChartsDataType::REGIONAL => transform(record.get(3)),
+        SpotifyChartsDataType::VIRAL => "".to_string(),
+      },
+      url: match record_type {
+        SpotifyChartsDataType::REGIONAL => transform(record.get(4)),
+        SpotifyChartsDataType::VIRAL => transform(record.get(3)),
+      }
+    }
+  }
+}
+
+#[derive(Deserialize, Copy, Clone, Debug)]
+pub enum SpotifyChartsDataType {
+  REGIONAL,
+  VIRAL
+}
+
 /* Today Unified API  */
 #[derive(Deserialize)]
 pub struct TodayRequest {
@@ -347,26 +431,38 @@ pub struct TodayResponse {
   pub qod: Option<Vec<Quote>>,
   pub wod: Option<WOD>,
   pub nod: Option<NOD>,
-  pub hod: Option<HOD>
+  pub hod: Option<HOD>,
+  pub sod: Option<SOD>
 }
 
 pub type GenericError = Box<dyn std::error::Error>;
 pub type GenericResult<T, E = GenericError> = std::result::Result<T, E>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum HttpVerb {
-  // HEAD,
+  HEAD,
   GET,
-  // POST,
-  // PUT,
-  // PATCH,
-  // DELETE
+  POST,
+  PUT,
+  PATCH,
+  DELETE
 }
 
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub enum HttpResponseType {
+  JSON, // application/json
+  TEXT, // text/plain
+  CSV // text/csv
+}
+
+#[derive(Debug, Clone)]
 pub struct HttpRequestParams {
   pub id: Option<String>,
   pub url: String,
   pub method: HttpVerb,
+  pub response_type: Option<HttpResponseType>,
   pub query_params: Option<HashMap<String, String>>,
   pub body: Option<String>
 }

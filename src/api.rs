@@ -10,8 +10,10 @@ use crate::types::{
   WODRequest, WOD, get_default_wod,
   NODRequest, NOD, get_default_nod,
   HODRequest, HOD, get_default_hod,
+  SOD,
   TodayRequest, TodayResponse,
-  HttpRequestParams, HttpVerb, RequestSeqWithSuccessFallbackParams
+  HttpRequestParams, HttpVerb, 
+  RequestSeqWithSuccessFallbackParams
 };
 
 /* Route Handlers */
@@ -200,6 +202,7 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
               id: Some("secure-hod-date".to_owned()),
               url: "https://history.muffinlabs.com/date".to_owned(),
               method: HttpVerb::GET,
+              response_type: None,
               query_params: None,
               body: None
             },
@@ -211,6 +214,7 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
                 util::datetime::get_current_day()
               ).to_owned(),
               method: HttpVerb::GET,
+              response_type: None,
               query_params: None,
               body: None
             },
@@ -218,6 +222,7 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
               id: Some("insecure-hod-date".to_owned()),
               url: "http://history.muffinlabs.com/date".to_owned(),
               method: HttpVerb::GET,
+              response_type: None,
               query_params: None,
               body: None
             },
@@ -229,6 +234,7 @@ pub async fn get_hod (data: web::Data<Mutex<AppCache>>, params: HODRequest) -> O
                 util::datetime::get_current_day()
               ).to_owned(),
               method: HttpVerb::GET,
+              response_type: None,
               query_params: None,
               body: None
             }
@@ -265,18 +271,73 @@ pub async fn history_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<H
   }
 }
 
+/* Song of the day */
+pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
+  let mut app_cache = data.lock().unwrap();
+  let sod_sources = vec![
+    ("https://spotifycharts.com/regional/global/daily/latest/download", "spotify-regional"),
+    ("https://spotifycharts.com/viral/global/daily/latest/download", "spotify-global"),
+    // ("https://itunes.apple.com/us/rss/topsongs/limit=200/json", "itunes-topsongs")
+  ];
+  let (sod_url, sod_source) = sod_sources[util::vector::get_random_in_range(sod_sources.len())];
+  let records = if app_cache.sod_exists() {
+    app_cache.sod.clone()
+  } else {
+    match util::http_client::make_request_raw(
+      HttpRequestParams {
+        id: Some(sod_source.to_string()),
+        url: sod_url.to_string(),
+        method: HttpVerb::GET,
+        response_type: None,
+        query_params: None,
+        body: None
+      }
+    ).await {
+      Ok(data) => {
+        let records = util::spotify_csv::response_to_records(data).await?;
+        println!("Successfully parsed {} record(s)", records.len());
+        app_cache.sod = Some(records.clone());
+        app_cache.sod_dt = Some(util::datetime::now());
+        Some(records)
+      },
+      Err(_err) => None
+    }
+  };
+  match records {
+    Some(recs) => {
+      let random_ptr = util::vector::get_random_in_range(recs.len());
+      let chosen_song = &recs[
+        random_ptr
+      ];
+      println!("Picking record# {} - {:?}", random_ptr, chosen_song);
+      let result = util::spotify_csv::record_to_sod(Some(chosen_song));
+      Some(result)
+    },
+    None => None
+  }
+}
+
+pub async fn song_of_day(data: web::Data<Mutex<AppCache>>) -> impl Responder {
+  match get_sod(data).await {
+    Some(result) => HttpResponse::Ok().json(result),
+    None => HttpResponse::new(StatusCode::from_u16(500).unwrap())
+  }
+}
+
 /* Today - Unified API */
 pub async fn today(data: web::Data<Mutex<AppCache>>, info: web::Query<TodayRequest>) -> impl Responder {
   let qod = get_qod(data.clone()).await;
   let wod = get_wod(data.clone(), WODRequest { location: info.location.to_owned(), unit: info.wod_unit.to_owned() }).await;
   let nod = get_nod(data.clone(), NODRequest { country: info.country.to_owned(), limit: info.nod_limit.to_owned() }).await;
   let hod = get_hod(data.clone(), HODRequest { limit: info.hod_limit.to_owned() }).await;
+  let sod = get_sod(data.clone()).await;
   HttpResponse::Ok().json::<TodayResponse>(
     TodayResponse { 
       qod,
       wod,
       nod,
-      hod
+      hod,
+      sod
     }
   )
 }

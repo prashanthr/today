@@ -24,10 +24,12 @@ async fn main() -> std::io::Result<()> {
                 wod: None,
                 nod: None,
                 hod: None,
+                sod: None,
                 qod_dt: None,
                 wod_dt: None,
                 nod_dt: None,
-                hod_dt: None
+                hod_dt: None,
+                sod_dt: None
             }
         )
     );
@@ -51,6 +53,7 @@ async fn main() -> std::io::Result<()> {
             .route("/qod", web::get().to(api::quote_of_day))
             .route("/wod", web::get().to(api::weather_of_day))
             .route("/hod", web::get().to(api::history_of_day))
+            .route("/sod", web::get().to(api::song_of_day))
             .route("/today", web::get().to(api::today))
     })
     .bind(format!("{}:{}", host, port))?
