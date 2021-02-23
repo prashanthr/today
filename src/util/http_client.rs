@@ -8,43 +8,9 @@ use crate::types::{
   GenericResult,
   HttpRequestParams,
   RequestSeqWithSuccessFallbackParams,
-  HttpResponseType
+  HttpResponseType,
+  HttpVerb
 };
-
-/*
- Makes a HTTP GET request with a fallback value so it never errors on any result
-*/
-pub async fn make_request_with_fallback<T: for<'de> serde::Deserialize<'de>> (url: &str, default_value: T) -> Result<T> {
-  let mut headers = header::HeaderMap::new();
-  headers.insert(header::ACCEPT, header::HeaderValue::from_static("application/json"));
-  let client = ClientBuilder::new()
-    .default_headers(headers)
-    .user_agent(concat!(
-      env!("CARGO_PKG_NAME"),
-      "/",
-      env!("CARGO_PKG_VERSION")))
-    .timeout(Duration::from_secs(10))
-    .build().unwrap();
-  println!("Making request to {}", url);
-  match client
-    .get(url)
-    .send()
-    .await {
-      Ok(data) =>  {
-        match data.status().is_success() {
-          true => Ok(data.json::<T>().await.unwrap()),
-          false => {
-            eprintln!("Received non OK response: {:?}", data);
-            serde_json::Result::Ok(default_value)
-          }
-        }    
-      },
-      Err(err) => {
-        eprintln!("Error occurred when trying to make request to {}: {}", url, err);
-        serde_json::Result::Ok(default_value)
-      }
-  }
-}
 
 /*
  Makes a raw HTTP GET request and gets the result or error
@@ -52,7 +18,10 @@ pub async fn make_request_with_fallback<T: for<'de> serde::Deserialize<'de>> (ur
 
 pub async fn make_request_raw(request_params: HttpRequestParams) -> GenericResult<reqwest::Response> {
   let mut headers = header::HeaderMap::new();
-  headers.insert(header::ACCEPT, header::HeaderValue::from_static("application/json"));
+  headers.insert(
+    header::ACCEPT, 
+    header::HeaderValue::from_static("application/json, text/plain, text/csv"
+  ));
   let client = ClientBuilder::new()
     .default_headers(headers)
     .user_agent(concat!(
@@ -77,7 +46,6 @@ pub async fn make_request_raw(request_params: HttpRequestParams) -> GenericResul
       }
     }
 }
-
 
 /*
  Makes a HTTP GET request and gets the result based on the passed in generic type or fails a non 2XX response
@@ -116,6 +84,36 @@ pub async fn make_request<T: for<'de> serde::Deserialize<'de>> (request_params: 
         let err_msg = format!("Error: Error occurred when trying to make request to {}: {}", params.url, err);
         eprintln!("{}", err_msg);
         Err(err_msg)?
+      }
+  }
+}
+
+/*
+ Makes a HTTP GET request with a fallback value so it never errors on any result
+*/
+pub async fn make_request_with_fallback<T: for<'de> serde::Deserialize<'de>> (url: &str, default_value: T) -> Result<T> {
+  match make_request_raw(
+    HttpRequestParams {
+      id: None,
+      url: url.to_owned(),
+      method: HttpVerb::GET,
+      response_type: None,
+      query_params: None,
+      body: None
+    }
+  ).await {
+      Ok(data) =>  {
+        match data.status().is_success() {
+          true => Ok(data.json::<T>().await.unwrap()),
+          false => {
+            eprintln!("Received non OK response: {:?}", data);
+            serde_json::Result::Ok(default_value)
+          }
+        }    
+      },
+      Err(err) => {
+        eprintln!("Error occurred when trying to make request to {}: {}", url, err);
+        serde_json::Result::Ok(default_value)
       }
   }
 }
