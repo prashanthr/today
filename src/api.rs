@@ -273,6 +273,8 @@ pub async fn history_of_day(data: web::Data<Mutex<AppCache>>, info: web::Query<H
 
 /* Song of the day */
 pub async fn get_sod(data: web::Data<Mutex<AppCache>>) -> Option<SOD> {
+  // Temporary return to find new alt for SpotifyCharts
+  return None;
   let mut app_cache = data.lock().unwrap();
   let sod_sources = vec![
     ("https://spotifycharts.com/regional/global/daily/latest/download", "spotify-regional"),
